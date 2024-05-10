@@ -5,7 +5,7 @@
 ## Developers:
 
 - Paulo H B Alves
-- Anthony R S D Carvalho
+- Anthony R D S Carvalho
 - Amanda R M Lins
 - Davi M L Melonio
 - Jonatas O Araujo
