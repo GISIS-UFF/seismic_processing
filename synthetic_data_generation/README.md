@@ -48,9 +48,9 @@ $$f(t) = (1 - 2\pi(\pi f t_d)^2)e^{-\pi(\pi f t_d)^2}$$
 
 Half derivative to remove cilindrical coordinate effects from 2D cartesian modeling
 
-$$\mathcal{F}\left\{\dfrac{\partial^\alpha f(t)}{\partial x^\alpha} \right\} = (iw)^\alpha F(w)$$
+$$\mathcal{F}\left[\dfrac{\partial^\alpha f(t)}{\partial x^\alpha} \right] = (iw)^\alpha F(w)$$
 
-$$f_h(t) = \mathcal{F}^{-1}\left\{ (iw)^{\frac{1}{2}} F(w)\right\}$$
+$$f_h(t) = \mathcal{F}^{-1}\left[ (iw)^{\frac{1}{2}} F(w)\right]$$
 
 Cerjan boundary conditions
 
