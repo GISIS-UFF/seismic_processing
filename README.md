@@ -1,6 +1,6 @@
 # seismic_processing
 
-mod
+This repository aims to consolidate great programming practices for undergraduate geophysics students at UFF. To achieve that, we will develop simple code for visualizing, filtering, sorting, stacking seismic data.
 
 ## Developers:
 
