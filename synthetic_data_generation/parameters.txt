@@ -1,0 +1,35 @@
+# Model parameters ------------------------------
+
+n_samples_x = 801      
+n_samples_z = 181
+
+model_spacing = 25.0
+
+velocity_model_file = overthrust_181x801_25m.bin 
+
+# Boundary parameters ---------------------------
+
+boundary_samples = 100
+attenuation_factor = 0.0015 
+
+# Time parameters -------------------------------
+
+time_samples = 1501
+time_spacing = 2e-3
+
+# Frequency parameters --------------------------
+
+max_frequency = 30.0
+
+# OBN geometry ----------------------------------
+
+shot_beg = 2525
+shot_end = 17525
+total_shots = 301
+shot_elevation = 0
+
+node_beg = 100
+node_end = 19900
+total_nodes = 397
+node_elevation = 0
+
