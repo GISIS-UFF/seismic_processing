@@ -18,6 +18,8 @@ class Seismic_Modeling:
             print("\n$ NUMBA_THREADING_LAYER='omp' python3 seismic_modeling_2D.py parameters.txt\n")
             exit()    
 
+        ti = time()
+
         self.file = argv[1]
 
         self.set_parameters()
@@ -31,13 +33,13 @@ class Seismic_Modeling:
         self.plot_wavelet()
         self.plot_geometry()
 
-        ti = time()
         self.fdm_propagation()
+
+        self.build_segy_file()
+
         tf = time()
 
         print(f"\nRuntime = {tf - ti:.3f} s")
-
-        self.build_segy_file()
 
     def catch_parameter(self, target):
         
@@ -441,7 +443,7 @@ class Seismic_Modeling:
             
         data.close()
         print("\nFile \033[31moverthrust_synthetic_seismic_data.sgy\033[m is ready!\n")
-        system("rm *.bin")
+        system("rm seismogram*")
 
 @njit(parallel = True)
 def fdm_8E2T_scalar2D(Upre, nxx, nzz, dh):
