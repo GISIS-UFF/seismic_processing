@@ -9,4 +9,4 @@ This repository aims to consolidate great programming practices for undergraduat
 - Amanda R M Lins
 - Davi M L Melonio
 - Jonatas O Araujo
-- Luciana Rios
+- Luciana A Rios
