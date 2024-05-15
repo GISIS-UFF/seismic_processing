@@ -2,19 +2,19 @@ import numpy as np
 import segyio as sgy
 import matplotlib.pyplot as plt
 
-keywords = {'src' : [9,  'shot'], 
+__keywords = {'src' : [9,  'shot'], 
             'rec' : [13, 'receiver'], 
             'off' : [37, 'offset'], 
-            'cmp' : [21, 'common mid point']}
+            'cmp' : [21, 'mid point']}
 
-def check_keyword(key : str) -> None:
+def __check_keyword(key : str) -> None:
     '''
     Documentation
     
 
     '''    
     
-    if key not in keywords.keys():
+    if key not in __keywords.keys():
         print("Invalid keyword!")
         print("Please use a valid header keyword: ['src', 'rec', 'off', 'cmp']")
         exit()
@@ -26,9 +26,9 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
 
     '''    
 
-    check_keyword(key)
+    __check_keyword(key)
 
-    byte = keywords.get(key)[0]
+    byte = __keywords.get(key)[0]
     possibilities = np.unique(data.attributes(byte))
 
     return possibilities
@@ -54,9 +54,9 @@ def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
     >>> plot_seismic(data, key = "off", index = 223750)
     '''    
 
-    check_keyword(key)
+    __check_keyword(key)
 
-    byte, label = keywords.get(key)
+    byte, label = __keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
@@ -83,9 +83,9 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     
     '''    
 
-    check_keyword(key)
+    __check_keyword(key)
 
-    byte, label = keywords.get(key)
+    byte, label = __keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
@@ -123,4 +123,143 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     fig.tight_layout()
     plt.show()
 
-    pass
+def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
+    '''
+    Documentation
+    
+    
+    '''    
+    
+    __check_keyword(key)
+
+    byte, label = __keywords.get(key)
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+
+    nx = len(traces)
+    dx = 25.0  # choose according with input key
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+
+    seismic = data.trace.raw[:].T
+    seismic = seismic[:, traces]
+
+    frequency = np.fft.fftfreq(nt, dt)
+    fx_seismic = np.fft.fft(seismic, axis = 0)
+
+    for i in range(len(traces)):
+        fx_seismic[:,i] *= 1.0 / np.max(fx_seismic[:,i]) 
+
+    scale = 0.99*np.std(seismic)
+
+    mask = np.logical_and(frequency >= fmin, frequency <= fmax)
+
+    floc = np.linspace(0, len(frequency[mask]), 11, dtype = int)
+    flab = np.around(frequency[floc], decimals = 1)
+    
+    tloc = np.linspace(0, nt-1, 11, dtype = int)
+    tlab = np.around(tloc*dt, decimals = 1)
+
+    fig, ax = plt.subplots(num = f"Common {label} gather with its 1D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
+
+    ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+
+    ax[0].set_yticks(tloc)
+    ax[0].set_yticklabels(tlab)
+    # ax[0].set_xticks(xloc)
+    # ax[0].set_xticklabels(xlab)
+
+    ax[0].set_title(f"Input common {label} gather")
+    ax[0].set_ylabel("Two way time [s]")
+    # define axis values according with key
+    # define labels according with key
+    # define colorbar correctly
+
+    ax[1].imshow(np.abs(fx_seismic[mask,:]), aspect = "auto", cmap = "jet")
+    ax[1].set_yticks(floc)
+    ax[1].set_yticklabels(flab)
+    # ax[1].set_xticks(xloc)
+    # ax[1].set_xticklabels(xlab)
+    ax[1].set_title(f"Input common {label} gather")
+    ax[1].set_ylabel("Frequency [Hz]")
+
+    fig.tight_layout()
+    plt.show()
+
+def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, angle : float) -> None:
+    '''
+    Documentation
+    
+    
+    '''    
+    
+    __check_keyword(key)
+
+    byte, label = __keywords.get(key)
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+
+    nx = len(traces)
+    dx = 25.0  # choose according with input key
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+
+    seismic = data.trace.raw[:].T
+    seismic = seismic[:, traces]
+
+    fk_seismic = np.fft.fftshift(np.fft.fft2(seismic))
+
+    frequency = np.fft.fftshift(np.fft.fftfreq(nt, dt))
+    wavenumber = np.fft.fftshift(np.fft.fftfreq(nx, dx))
+
+    df = np.abs(np.abs(frequency[1]) - np.abs(frequency[0]))
+    dk = np.abs(np.abs(wavenumber[1]) - np.abs(wavenumber[0]))
+    
+    x = np.arange(nx)
+
+    y1 = np.array(+angle*(np.pi/180)*(x - 0.5*nx) + 0.5*nt, dtype = int) 
+    y2 = np.array(-angle*(np.pi/180)*(x - 0.5*nx) + 0.5*nt, dtype = int) 
+
+    scale = 0.99*np.std(seismic)
+
+    xloc = np.linspace(0, nx, 5)
+    xlab = np.around(xloc*dx, decimals = 1)
+
+    tloc = np.linspace(0, nt, 11, dtype = int)
+    tlab = np.around(tloc*dt, decimals = 1)
+
+    fig, ax = plt.subplots(num = f"Common {label} gather with its 1D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
+
+    ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+
+    ax[0].set_yticks(tloc)
+    ax[0].set_yticklabels(tlab)
+    # ax[0].set_xticks(xloc)
+    # ax[0].set_xticklabels(xlab)
+
+    ax[0].set_title(f"Input common {label} gather")
+    ax[0].set_ylabel("Two way time [s]")
+    # define axis values according with key
+    # define labels according with key
+    # define colorbar correctly
+
+    ax[1].imshow(np.abs(fk_seismic), aspect = "auto", cmap = "jet", extent = [np.min(wavenumber),(-1)*np.min(wavenumber),np.min(frequency),(-1)*np.min(frequency)])
+    ax[1].plot(x*dk - np.max(wavenumber), y1*df - np.max(frequency),"--k")
+    ax[1].plot(x*dk - np.max(wavenumber), y2*df - np.max(frequency),"--k")
+    ax[1].set_ylim([-angle, angle])
+    ax[1].set_title(f"Input FK domain")
+    ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]")
+    ax[1].set_ylabel("Frequency [Hz]")
+
+    fig.tight_layout()
+    plt.show()
+
+def difference(data1 : sgy.SegyFile, data2 : sgy.SegyFile) -> None:
+    '''
+    Documentation
+    
+    
+    '''    
+
+    pass    
+

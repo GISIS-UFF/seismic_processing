@@ -9,6 +9,18 @@ def import_sgy_file(filename : str) -> sgy.SegyFile:
     
     return sgy.open(filename, ignore_geometry = True)
 
+def export_segy_file(data : sgy.SegyFile, filename : str) -> None:
+    '''
+    Documentation
+    
+
+    '''
+    
+    sgy.tools.from_array2D(filename, data.trace.raw[:])
+    data_output = sgy.open(filename, "r+", ignore_geometry = True)
+    data_output.header = data.header
+    data_output.close()
+
 def show_binary_header(data : sgy.SegyFile) -> None:
     '''
     Documentation
