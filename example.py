@@ -1,6 +1,6 @@
-from toolbox import manage as mng
+from toolbox import managing as mng
 from toolbox import filtering as filter
-from toolbox import visualization as view
+from toolbox import visualizing as view
 
 data = mng.import_sgy_file("data/overthrust_synthetic_seismic_data.sgy")
 
