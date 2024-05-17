@@ -3,9 +3,9 @@ import segyio as sgy
 import matplotlib.pyplot as plt
 
 __keywords = {'src' : [9,  'shot'], 
-            'rec' : [13, 'receiver'], 
-            'off' : [37, 'offset'], 
-            'cmp' : [21, 'mid point']}
+              'rec' : [13, 'receiver'], 
+              'off' : [37, 'offset'], 
+              'cmp' : [21, 'mid point']}
 
 def __check_keyword(key : str) -> None:
     '''
