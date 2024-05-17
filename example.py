@@ -14,6 +14,6 @@ index = 1
 
 view.seismic(data, key, index)
 view.geometry(data, key, index)
-view.fourier_fx_domain(data, key, index, 0, 100)
-view.fourier_fk_domain(data, key, index, 50)
+view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 100)
+view.fourier_fk_domain(data, key, index, fmin = 0, fmax = 100)
 

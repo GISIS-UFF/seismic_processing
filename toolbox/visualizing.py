@@ -100,7 +100,6 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     cmpx = data.attributes(181)[traces] / data.attributes(69)[traces]
     cmpy = data.attributes(185)[traces] / data.attributes(69)[traces]    
 
-
     fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 1, nrows = 1, figsize = (10, 5))
 
     # adjust order of plots according with key
@@ -186,7 +185,7 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     fig.tight_layout()
     plt.show()
 
-def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, angle : float) -> None:
+def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
     '''
     Documentation
     
@@ -212,14 +211,6 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, angle : float
     frequency = np.fft.fftshift(np.fft.fftfreq(nt, dt))
     wavenumber = np.fft.fftshift(np.fft.fftfreq(nx, dx))
 
-    df = np.abs(np.abs(frequency[1]) - np.abs(frequency[0]))
-    dk = np.abs(np.abs(wavenumber[1]) - np.abs(wavenumber[0]))
-    
-    x = np.arange(nx)
-
-    y1 = np.array(+angle*(np.pi/180)*(x - 0.5*nx) + 0.5*nt, dtype = int) 
-    y2 = np.array(-angle*(np.pi/180)*(x - 0.5*nx) + 0.5*nt, dtype = int) 
-
     scale = 0.99*np.std(seismic)
 
     xloc = np.linspace(0, nx, 5)
@@ -243,10 +234,7 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, angle : float
     # define labels according with key
     # define colorbar correctly
 
-    ax[1].imshow(np.abs(fk_seismic), aspect = "auto", cmap = "jet", extent = [np.min(wavenumber),(-1)*np.min(wavenumber),np.min(frequency),(-1)*np.min(frequency)])
-    ax[1].plot(x*dk - np.max(wavenumber), y1*df - np.max(frequency),"--k")
-    ax[1].plot(x*dk - np.max(wavenumber), y2*df - np.max(frequency),"--k")
-    ax[1].set_ylim([-angle, angle])
+    ax[1].imshow(np.abs(fk_seismic), aspect = "auto", cmap = "jet")
     ax[1].set_title(f"Input FK domain")
     ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]")
     ax[1].set_ylabel("Frequency [Hz]")
