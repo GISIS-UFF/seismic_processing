@@ -33,6 +33,7 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
 
     return possibilities
 
+# Amanda
 def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
     '''
     Plot a seismic gather according with a specific header keyword.
@@ -76,6 +77,7 @@ def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
     fig.tight_layout()
     plt.show()
 
+# David
 def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     '''
     Documentation
@@ -122,6 +124,7 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     fig.tight_layout()
     plt.show()
 
+# Anthony
 def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
     '''
     Documentation
@@ -185,6 +188,7 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     fig.tight_layout()
     plt.show()
 
+# Jonatas
 def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
     '''
     Documentation
