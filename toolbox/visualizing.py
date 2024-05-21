@@ -139,6 +139,7 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
     nx = len(traces)
+    print(traces)
     dx = 25.0  # choose according with input key
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
@@ -158,6 +159,9 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
 
     floc = np.linspace(0, len(frequency[mask]), 11, dtype = int)
     flab = np.around(frequency[floc], decimals = 1)
+    xloc=np.linspace(0, nx-1, 5, dtype = int)
+    xlab=np.around(xloc*dx, decimals = 1)
+
     
     tloc = np.linspace(0, nt-1, 11, dtype = int)
     tlab = np.around(tloc*dt, decimals = 1)
@@ -180,9 +184,10 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     ax[1].imshow(np.abs(fx_seismic[mask,:]), aspect = "auto", cmap = "jet")
     ax[1].set_yticks(floc)
     ax[1].set_yticklabels(flab)
-    # ax[1].set_xticks(xloc)
-    # ax[1].set_xticklabels(xlab)
+    ax[1].set_xticks(xloc)
+    ax[1].set_xticklabels(xlab)
     ax[1].set_title(f"Input common {label} gather")
+    ax[1].set_xlabel("space[m]")
     ax[1].set_ylabel("Frequency [Hz]")
 
     fig.tight_layout()
