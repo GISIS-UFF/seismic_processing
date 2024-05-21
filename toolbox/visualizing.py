@@ -246,12 +246,42 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     fig.tight_layout()
     plt.show()
 
-def difference(data1 : sgy.SegyFile, data2 : sgy.SegyFile) -> None:
+def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : int) -> None:
     '''
     Documentation
     
     
     '''    
+    __check_keyword(key)
 
-    pass    
+    byte, label = __keywords.get(key)
+
+    traces = np.where(input.attributes(byte)[:] == index)[0]
+
+    seismic_input = input.trace.raw[:].T
+    seismic_input = seismic_input[:, traces]
+
+    seismic_output = output.trace.raw[:].T
+    seismic_output = seismic_output[:, traces]
+
+    seismic_diff = seismic_output - seismic_input
+
+    scale = 0.99*np.std(seismic_input)
+
+    fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 3, nrows = 1, figsize = (18, 5))
+
+    ax[0].imshow(seismic_input, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+
+
+    ax[1].imshow(seismic_output, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+
+
+    ax[2].imshow(seismic_diff, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+
+    # define axis values according with key
+    # define labels according with key
+    # define colorbar correctly
+        
+    fig.tight_layout()
+    plt.show()
 
