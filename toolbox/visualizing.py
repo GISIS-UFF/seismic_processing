@@ -124,7 +124,7 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     fig.tight_layout()
     plt.show()
 
-# Anthony
+
 def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
     '''
     Documentation
@@ -139,7 +139,7 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
     nx = len(traces)
-    print(traces)
+    
     dx = 25.0  # choose according with input key
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
@@ -159,6 +159,7 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
 
     floc = np.linspace(0, len(frequency[mask]), 11, dtype = int)
     flab = np.around(frequency[floc], decimals = 1)
+    
     xloc=np.linspace(0, nx-1, 5, dtype = int)
     xlab=np.around(xloc*dx, decimals = 1)
 
