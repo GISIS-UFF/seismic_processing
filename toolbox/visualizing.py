@@ -77,7 +77,7 @@ def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
     fig.tight_layout()
     plt.show()
 
-# David
+# Davi
 def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     '''
     Documentation
@@ -102,28 +102,44 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     cmpx = data.attributes(181)[traces] / data.attributes(69)[traces]
     cmpy = data.attributes(185)[traces] / data.attributes(69)[traces]    
 
-    fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 1, nrows = 1, figsize = (10, 5))
+    fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 1, nrows = 1, figsize = (10, 5))        
+   
+    plot_data = {
+        "cmp": (cmpx, cmpy, 'ob'),
+        "receiver": (rx, ry, 'oy'),
+        "shot": (sx, sy, 'og')
+    }
 
-    # adjust order of plots according with key
-    # example: 
-    #    src key order -> 1 cmp, 2 receiver and 3 shot
-    #    cmp key order -> 1 shot, 2 receiver and 3 cmp          
+    plot_title = {
+        "src": f"Common Shot Gatter number {index}",
+        "cmp": f"Common Mid Point Gatter number {index}",
+        "off": f"Common Offset Gather number {index}"
+    }
 
-    ax.plot(cmpx, cmpy, 'ob') # 1
-    ax.plot(rx, ry, 'oy')     # 2
-    ax.plot(sx, sy, 'og')     # 3
+    plot_order = {
+        "src": ["cmp", "receiver", "shot"],
+        "cmp": ["shot", "receiver", "cmp"],
+        "off": ["receiver", "shot", "cmp"]
+    }
 
+    if key in plot_order:
+        for element in plot_order[key]:
+            ax.plot(*plot_data[element], label=element)
+    
     # to show depth with colors
-    # ax.scatter(rx, rx, c = rz, cmap = ???)
-    # ax.scatter(sx, sx, c = sz, cmap = ???)
-
-    # define axis values according with key
-    # define labels according with key
-    # define colorbar correctly
+    ax.scatter(rx, rx, c = rz, cmap = "viridis")
+    ax.scatter(sx, sx, c = sz, cmap = "viridis")
+    ax.set_title(plot_title[key], fontsize=15)
+    ax.set_ylabel("Depth[m]", fontsize=10)
         
     fig.tight_layout()
+    plt.gca().invert_yaxis()
+    ax.legend(loc="lower left")
     plt.show()
 
+    # define axis values according with key [almost check]
+    # define labels according with key [check]
+    # define colorbar correctly [pendent]
 
 def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
     '''
