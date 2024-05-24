@@ -64,6 +64,16 @@ def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
     seismic = data.trace.raw[:].T
     seismic = seismic[:, traces]
 
+    sx = data.attributes(73)[traces] / data.attributes(71)[traces]
+    sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
+
+    rx = data.attributes(81)[traces] / data.attributes(69)[traces]
+    ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
+
+    distance = np.sqrt((sx - rx)**2 + (sy - ry)**2)
+
+    print(distance)
+
     scale = 0.99*np.std(seismic)
 
     fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 1, nrows = 1, figsize = (10, 5))
@@ -127,13 +137,18 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
         "off": ["receiver", "shot", "cmp"]
     }
 
+    # subplots
+    # 1 geometria completa
+    # 2 quantidade de cmps por traço
+    # 3 geometria do gather ativo
+
     if key in plot_order:
         for element in plot_order[key]:
             ax.plot(*plot_data[element], label=element)
     
     # to show depth with colors
-    ax.scatter(rx, rx, c = rz, cmap = "viridis")
-    ax.scatter(sx, sx, c = sz, cmap = "viridis")
+    ax.scatter(rx, ry, c = rz, cmap = "viridis")
+    ax.scatter(sx, sy, c = sz, cmap = "viridis")
     ax.set_title(plot_title[key], fontsize=15)
     ax.set_ylabel("Depth[m]", fontsize=10)
         
