@@ -70,10 +70,15 @@ def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
 
     ax.imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
-    # define axis values according with key
-    # define labels according with key
-    # define colorbar correctly
-        
+    x_ticks = np.arange(1, seismic.shape[1], step = 5)
+    y_ticks = np.arange(0, seismic.shape[0], step = 100)
+    ax.set_xticks(x_ticks)
+    ax.set_yticks(y_ticks)
+
+    plt.xlabel('Trace')
+    plt.ylabel('Time')
+    # define colorbar correctly  
+
     fig.tight_layout()
     plt.show()
 
