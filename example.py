@@ -8,9 +8,10 @@ data = mng.import_sgy_file(input_file)
 
 # mng.show_trace_header(data)
 
-key = 'off'
+key = 'rec'
 
 indexes = view.keyword_indexes(data, key)
+#print(indexes)
 
 index = 2500
 
