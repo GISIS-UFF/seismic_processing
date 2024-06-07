@@ -292,8 +292,8 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
 
     ax[0].set_yticks(tloc)
     ax[0].set_yticklabels(tlab)
-    # ax[0].set_xticks(xloc)
-    # ax[0].set_xticklabels(xlab)
+    ax[0].set_xticks(xloc)
+    ax[0].set_xticklabels(xlab)
 
     ax[0].set_title(f"Input common {label} gather")
     ax[0].set_ylabel("Two way time [s]")
@@ -301,7 +301,7 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     # define labels according with key
     # define colorbar correctly
 
-    ax[1].imshow(np.abs(fk_seismic), aspect = "auto", cmap = "jet")
+    ax[1].imshow(np.abs(fk_seismic), aspect = "auto", extent=[wavenumber[0],wavenumber[-1], frequency[0], frequency[-1]], cmap = "jet")
     ax[1].set_title(f"Input FK domain")
     ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]")
     ax[1].set_ylabel("Frequency [Hz]")
