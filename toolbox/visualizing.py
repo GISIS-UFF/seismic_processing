@@ -285,10 +285,14 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
 
     tloc = np.linspace(0, nt, 11, dtype = int)
     tlab = np.around(tloc*dt, decimals = 1)
+    
+    floc = np.linspace(frequency[0], frequency[-1], 11, dtype = int)
 
+    kloc = np.linspace(wavenumber[-1], wavenumber[0], 11, dtype = int)
+    
     fig, ax = plt.subplots(num = f"Common {label} gather with its 1D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
 
-    ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
     ax[0].set_yticks(tloc)
     ax[0].set_yticklabels(tlab)
@@ -301,11 +305,15 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     # define labels according with key
     # define colorbar correctly
 
-    ax[1].imshow(np.abs(fk_seismic), aspect = "auto", extent=[wavenumber[0],wavenumber[-1], frequency[0], frequency[-1]], cmap = "jet")
+    fk_plot = ax[1].imshow(np.abs(fk_seismic), aspect = "auto", extent=[wavenumber[0],wavenumber[-1], frequency[0], frequency[-1]], cmap = "jet")
     ax[1].set_title(f"Input FK domain")
     ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]")
     ax[1].set_ylabel("Frequency [Hz]")
-
+    
+    ax[1].set_yticks(floc)
+    
+    fig.colorbar(im, ax=ax[0])
+    fig.colorbar(fk_plot, ax=ax[1])
     fig.tight_layout()
     plt.show()
 
