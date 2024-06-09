@@ -8,17 +8,17 @@ data = mng.import_sgy_file(input_file)
 
 # mng.show_trace_header(data)
 
-key = 'rec'
+key = 'src'
 
 indexes = view.keyword_indexes(data, key)
-#print(indexes)
+print(indexes)
 
-index = 250
+index = 301
 
 # view.seismic(data, key, index)
 # view.geometry(data, key, index)
-# view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 100)
-view.fourier_fk_domain(data, key, index, fmin = 0, fmax = 100)
+view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 50)
+#view.fourier_fk_domain(data, key, index, fmin = 0, fmax = 100)
 
 # fmin = 5    
 # fmax = 10

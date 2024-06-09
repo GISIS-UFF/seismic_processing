@@ -18,6 +18,15 @@ def __check_keyword(key : str) -> None:
         print("Invalid keyword!")
         print("Please use a valid header keyword: ['src', 'rec', 'off', 'cmp']")
         exit()
+def __check_INDEX(index : int, data : sgy.SegyFile, key : str) -> None:
+    '''
+    Documentation
+    
+
+    '''    
+    
+    if index not in keyword_indexes(data,key):
+         raise Exception("INVALID INDEX")
 
 def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
     '''
@@ -173,30 +182,23 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     byte, label = __keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
-   
-    sx = data.attributes(73)[traces] / data.attributes(71)[traces]
-   
-    sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
-
-    rx = data.attributes(81)[traces] / data.attributes(69)[traces]
-   
-    ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
+    __check_INDEX(index,data,key)
+    
+    # if len(traces)==0:
+    #     raise Exception("INVALID INDEX")
+        
+     
 
     nx = len(traces)
-    # distance={'cmp':np.sqrt((sx - rx)**2 + (sy - ry)**2),
-    #           'off':np.sqrt((sx - rx)**2 + (sy - ry)**2),
-    #           'src':np.sqrt((sx - rx)**2 + (sy - ry)**2),
-    #           'rec':np.sqrt((sx - rx)**2 + (sy - ry)**2)}
-    # distance=distance[key]
-    # print(distance)
-    # if key=='off':
-    #     dx=distance[1]
+    
+    
+    
     
 
 
          
     
-    dx = 25.0  # choose according with input key
+    #dx = 25.0  # choose according with input key
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
     
@@ -218,7 +220,7 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     flab = np.around(frequency[floc], decimals = 1)
     
     xloc=np.linspace(0, nx-1, 5, dtype = int)
-    xlab=np.around(xloc*dx , decimals = 1)
+    xlab=np.around(xloc, decimals = 1)
     
     
     tloc = np.linspace(0, nt-1, 11, dtype = int)
