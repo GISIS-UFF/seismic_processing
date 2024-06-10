@@ -8,12 +8,12 @@ data = mng.import_sgy_file(input_file)
 
 # mng.show_trace_header(data)
 
-key = 'src'
+key = 'off'
 
 indexes = view.keyword_indexes(data, key)
 print(indexes)
 
-index = 301
+index = 232500
 
 # view.seismic(data, key, index)
 # view.geometry(data, key, index)

@@ -18,7 +18,7 @@ def __check_keyword(key : str) -> None:
         print("Invalid keyword!")
         print("Please use a valid header keyword: ['src', 'rec', 'off', 'cmp']")
         exit()
-def __check_INDEX(index : int, data : sgy.SegyFile, key : str) -> None:
+def __check_index(data  : sgy.SegyFile, key : str, index : int ) -> None:
     '''
     Documentation
     
@@ -43,7 +43,7 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
     return possibilities
 
 # Amanda
-def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
+def seismic(data  : sgy.SegyFile, key : str, index : int) -> None:
     '''
     Plot a seismic gather according with a specific header keyword.
     
@@ -182,7 +182,7 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     byte, label = __keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
-    __check_INDEX(index,data,key)
+    __check_index(data,key,index)
     
     # if len(traces)==0:
     #     raise Exception("INVALID INDEX")
