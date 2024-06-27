@@ -8,20 +8,21 @@ data = mng.import_sgy_file(input_file)
 
 mng.show_trace_header(data)
 
-key = 'cmp'
+key = 'src'
 
 indexes = view.keyword_indexes(data, key)
-#print(indexes)
 
-index = 261
+print(indexes)
+
+index = 126
 
 view.seismic(data, key, index)
 view.geometry(data, key, index)
 view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 100)
 view.fourier_fk_domain(data, key, index, fmin = 0, fmax = 100)
 
-fmin = 5    
-fmax = 10
+fmin = 2    
+fmax = 50
 
 output_file = f"data/overthrust_seismic_data_{fmin}-{fmax}Hz.sgy"
 

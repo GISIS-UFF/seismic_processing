@@ -8,47 +8,52 @@ __keywords = {'src' : [9,  'shot'],
               'cmp' : [21, 'mid point']}
 
 def __check_keyword(key : str) -> None:
-    '''
-    Documentation
-    
-
-    '''    
     
     if key not in __keywords.keys():
-        print("Invalid keyword!")
-        print("Please use a valid header keyword: ['src', 'rec', 'off', 'cmp']")
+        # raise Exception("\033[31mInvalid keyword!\033[m\
+        #                        \nPlease use a valid header keyword: ['src', 'rec', 'off', 'cmp']")
+        print("\033[31mInvalid keyword!\033[m\
+                     \nPlease use a valid header keyword: ['src', 'rec', 'off', 'cmp']")
         exit()
-def __check_index(data  : sgy.SegyFile, key : str, index : int ) -> None:
-    '''
-    Documentation
-    
 
-    '''    
+def __check_index(data : sgy.SegyFile, key : str, index : int ) -> None:   
     
-    if index not in keyword_indexes(data,key):
-         raise Exception("INVALID INDEX")
+    if index not in keyword_indexes(data, key):
+        # raise Exception("\033[31mInvalid index choice!\033[m\
+        #                        \nPlease use the function keyword_indexes to choose a properly index.")
+        print("\033[31mInvalid index choice!\033[m\
+                     \nPlease use the function \033[33mkeyword_indexes\033[m to choose a properly index.")
+        exit()
 
 def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
     '''
-    Documentation
+    Print possible indexes to access in seismic gather.
     
+    ### Parameters:        
+    
+    data: segyio object.
 
+    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    
+    ### Examples:
+    
+    >>> keyword_indexes(data, key = "src")
+    >>> keyword_indexes(data, key = "rec")
+    >>> keyword_indexes(data, key = "cmp")
+    >>> keyword_indexes(data, key = "off")
     '''    
 
     __check_keyword(key)
 
     byte = __keywords.get(key)[0]
-    possibilities = np.unique(data.attributes(byte))
 
-    return possibilities
+    return np.unique(data.attributes(byte))
 
-# Amanda
-def seismic(data  : sgy.SegyFile, key : str, index : int) -> None:
+def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
     '''
-    Plot a seismic gather according with a specific header keyword.
+    Plot a seismic gather according to a specific header keyword.
     
-    Parameters
-    ----------        
+    ### Parameters:        
     
     data: segyio object.
 
@@ -56,8 +61,8 @@ def seismic(data  : sgy.SegyFile, key : str, index : int) -> None:
     
     index: integer that select a common gather.  
 
-    Examples
-    --------
+    ### Examples:
+
     >>> plot_seismic(data, key = "src", index = 51)
     >>> plot_seismic(data, key = "rec", index = 203)
     >>> plot_seismic(data, key = "cmp", index = 315)
@@ -65,6 +70,7 @@ def seismic(data  : sgy.SegyFile, key : str, index : int) -> None:
     '''    
 
     __check_keyword(key)
+    __check_index(data, key, index)
 
     byte, label = __keywords.get(key)
 
@@ -73,30 +79,29 @@ def seismic(data  : sgy.SegyFile, key : str, index : int) -> None:
     seismic = data.trace.raw[:].T
     seismic = seismic[:, traces]
 
-    sx = data.attributes(73)[traces] / data.attributes(71)[traces]
-    sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
 
-    rx = data.attributes(81)[traces] / data.attributes(69)[traces]
-    ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
-
-    distance = np.sqrt((sx - rx)**2 + (sy - ry)**2)
-
-    print(distance)
-
-    scale = 0.99*np.std(seismic)
+    scale = 0.9*np.std(seismic)
 
     fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 1, nrows = 1, figsize = (10, 5))
 
     ax.imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
-    x_ticks = np.arange(1, seismic.shape[1], step = 5)
-    y_ticks = np.arange(0, seismic.shape[0], step = 100)
-    ax.set_xticks(x_ticks)
-    ax.set_yticks(y_ticks)
+    xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
+    xlab = traces[xloc]
 
-    plt.xlabel('Trace')
-    plt.ylabel('Time')
-    # define colorbar correctly  
+    tloc = np.linspace(0, nt, 11, dtype = int)
+    tlab = np.around(tloc * dt, decimals = 3)
+    
+    ax.set_xticks(xloc)
+    ax.set_xticklabels(xlab)
+    
+    ax.set_yticks(tloc)
+    ax.set_yticklabels(tlab)
+
+    ax.set_ylabel('Time [s]')
+    ax.set_xlabel('Trace number')
 
     fig.tight_layout()
     plt.show()
