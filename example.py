@@ -2,7 +2,7 @@ from toolbox import managing as mng
 from toolbox import filtering as filter
 from toolbox import visualizing as view
 
-input_file = "data/overthrust_synthetic_seismic_data.sgy"
+input_file = "/data/overthrust_synthetic_seismic_data.sgy"
 
 data = mng.import_sgy_file(input_file)
 
@@ -14,7 +14,7 @@ indexes = view.keyword_indexes(data, key)
 
 print(indexes)
 
-index = 126
+index = 145
 
 view.seismic(data, key, index)
 view.geometry(data, key, index)

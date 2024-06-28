@@ -170,24 +170,25 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     
     fig, ax = plt.subplots(num = f"Common {label} gather", nrows = 3, ncols = 1, figsize = (10, 5))
 
-    ax[0].scatter(sx, sy, color="b", label="Sources")
-    ax[0].set_title("Geometry", fontsize=15)
-
-    im2 = ax[0].scatter(rx, ry, c = rx, cmap = "viridis", label="Receivers")
-    cax2 = fig.colorbar(im2, ax=ax[0], label='Depth [m]')
-    cax2.set_ticks(np.linspace(rx.min(), rx.max(), num=5))
+    ax[2].scatter(sx, sy, c = sz, cmap = "viridis", label="Sources")
+    ax[2].set_title("Geometry", fontsize=15)
+    im2 = ax[2].scatter(rx, ry, c = rz, cmap = "viridis", label="Receivers")
+    ax[2].cbar = fig.colorbar(im2, ax = ax[2])
+    ax[2].cbar.set_label("Receiver Depth", fontsize = 15) # não consegui entender como funciona esse "c = arg"
         
     ax[1].scatter(cmpx, cmpy, label="CMP per Trace")
-    #ax[1].scatter(cmp_trace, cmp_trace, label="CMP per Trace")
+
 
     if key in plot_order:
         for element in plot_order[key]:
-            ax[2].plot(*plot_data[element], label=element)
-            ax[2].set_title(plot_title[key], fontsize=15)
+            ax[0].plot(*plot_data[element], label=element)
+            ax[0].set_title(plot_title[key], fontsize=15)
 
     for i in range(len(ax)):
         ax[i].set_xlabel("Distance [m]", fontsize=12)
         ax[i].legend(loc="lower left")
+        ax[i].set_xticks(np.linspace(rx.min(), rx.max(), 11, dtype=int))
+        ax[i].set_xticklabels(np.array(np.linspace(0, 15000, 11, dtype=int))) # Como que eu consigo achar esse 15k de forma legit(?)
 
     fig.tight_layout()
     plt.gca().invert_yaxis()
