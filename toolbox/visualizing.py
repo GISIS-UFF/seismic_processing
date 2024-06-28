@@ -10,8 +10,6 @@ __keywords = {'src' : [9,  'shot'],
 def __check_keyword(key : str) -> None:
     
     if key not in __keywords.keys():
-        # raise Exception("\033[31mInvalid keyword!\033[m\
-        #                        \nPlease use a valid header keyword: ['src', 'rec', 'off', 'cmp']")
         print("\033[31mInvalid keyword!\033[m\
                      \nPlease use a valid header keyword: ['src', 'rec', 'off', 'cmp']")
         exit()
@@ -19,8 +17,6 @@ def __check_keyword(key : str) -> None:
 def __check_index(data : sgy.SegyFile, key : str, index : int ) -> None:   
     
     if index not in keyword_indexes(data, key):
-        # raise Exception("\033[31mInvalid index choice!\033[m\
-        #                        \nPlease use the function keyword_indexes to choose a properly index.")
         print("\033[31mInvalid index choice!\033[m\
                      \nPlease use the function \033[33mkeyword_indexes\033[m to choose a properly index.")
         exit()
@@ -137,6 +133,10 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
+    sx_test = data.attributes(73)[:] / data.attributes(71)[:]
+    sz_test = data.attributes(73)[:] / data.attributes(71)[:]
+
+
     sx = data.attributes(73)[traces] / data.attributes(71)[traces]
     sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
     sz = data.attributes(45)[traces] / data.attributes(71)[traces]
@@ -148,8 +148,10 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     cmpx = data.attributes(181)[traces] / data.attributes(69)[traces]
     cmpy = data.attributes(185)[traces] / data.attributes(69)[traces]
 
-    cmp_trace = data.attributes(25)[traces]          
+    cmp_trace, traces_per_cmp = np.unique(data.attributes(25)[:], return_counts = True)          
    
+    print(cmp_trace, traces_per_cmp)
+
     plot_data = {
         "cmp": (cmpx, cmpy, 'ob'),
         "receiver": (rx, ry, 'oy'),
