@@ -2,8 +2,6 @@ import numpy as np
 import segyio as sgy
 import matplotlib.pyplot as plt
 
-from statistics import mode
-
 __keywords = {'src' : [9,  'shot'], 
               'rec' : [13, 'receiver'], 
               'off' : [37, 'offset'], 
@@ -354,7 +352,7 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
 
     scale = 0.9*np.std(seismic)
     
-    fig, ax = plt.subplots(num = f"Common {label} gather with its 1D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
+    fig, ax = plt.subplots(num = f"Common {label} gather with its 2D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
 
     im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
