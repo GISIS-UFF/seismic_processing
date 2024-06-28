@@ -2,6 +2,8 @@ import numpy as np
 import segyio as sgy
 import matplotlib.pyplot as plt
 
+from statistics import mode
+
 __keywords = {'src' : [9,  'shot'], 
               'rec' : [13, 'receiver'], 
               'off' : [37, 'offset'], 
@@ -63,10 +65,10 @@ def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
 
     ### Examples:
 
-    >>> plot_seismic(data, key = "src", index = 51)
-    >>> plot_seismic(data, key = "rec", index = 203)
-    >>> plot_seismic(data, key = "cmp", index = 315)
-    >>> plot_seismic(data, key = "off", index = 223750)
+    >>> view.seismic(data, key = "src", index = 51)
+    >>> view.seismic(data, key = "rec", index = 203)
+    >>> view.seismic(data, key = "cmp", index = 315)
+    >>> view.seismic(data, key = "off", index = 223750)
     '''    
 
     __check_keyword(key)
@@ -86,13 +88,13 @@ def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
 
     fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 1, nrows = 1, figsize = (10, 5))
 
-    ax.imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    img = ax.imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
     xlab = traces[xloc]
 
     tloc = np.linspace(0, nt, 11, dtype = int)
-    tlab = np.around(tloc * dt, decimals = 3)
+    tlab = np.around(tloc * dt, decimals = 1)
     
     ax.set_xticks(xloc)
     ax.set_xticklabels(xlab)
@@ -100,21 +102,38 @@ def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
     ax.set_yticks(tloc)
     ax.set_yticklabels(tlab)
 
-    ax.set_ylabel('Time [s]')
-    ax.set_xlabel('Trace number')
+    ax.set_ylabel('Time [s]', fontsize = 15)
+    ax.set_xlabel('Trace number', fontsize = 15)
+
+    cbar = fig.colorbar(img, ax = ax)
+    cbar.set_label("Amplitude", fontsize = 15)
 
     fig.tight_layout()
     plt.show()
 
-# Davi
 def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     '''
-    Documentation
+    Plot geometry, traces per cmp and the current source-receiver configuration 
+    according to a specific header keyword.
     
+    ### Parameters:        
     
+    data: segyio object.
+
+    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    
+    index: integer that select a common gather.  
+
+    ### Examples:
+
+    >>> view.geometry(data, key = "src", index = 51)
+    >>> view.geometry(data, key = "rec", index = 203)
+    >>> view.geometry(data, key = "cmp", index = 315)
+    >>> view.geometry(data, key = "off", index = 223750)
     '''    
 
     __check_keyword(key)
+    __check_index(data, key, index)
 
     byte, label = __keywords.get(key)
 
@@ -140,8 +159,8 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     }
 
     plot_title = {
-        "src": f"Common Shot Gatter number {index}",
-        "cmp": f"Common Mid Point Gatter number {index}",
+        "src": f"Common Shot Gather number {index}",
+        "cmp": f"Common Mid Point Gather number {index}",
         "off": f"Common Offset Gather number {index}"
     }
 
@@ -151,7 +170,7 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
         "off": ["receiver", "shot", "cmp"]
     }
     
-    fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(10,5))
+    fig, ax = plt.subplots(num = f"Common {label} gather", nrows = 3, ncols = 1, figsize = (10, 5))
 
     ax[0].scatter(sx, sy, color="b", label="Sources")
     ax[0].set_title("Geometry", fontsize=15)
@@ -179,37 +198,38 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
 
 def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
     '''
-    Documentation
+    Plot the amplitude spectra of each trace in gather according to a specific header keyword.
     
+    ### Parameters:        
     
+    data: segyio object.
+
+    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    
+    index: integer that select a common gather.  
+
+    fmin: minimum frequency to visualize    
+    
+    fmin: maximum frequency to visualize    
+    
+    ### Examples:
+
+    >>> view.fourier_fx_domain(data, key = "src", index = 51, fmin = 0, fmax = 100)
+    >>> view.fourier_fx_domain(data, key = "rec", index = 203, fmin = 0, fmax = 100)
+    >>> view.fourier_fx_domain(data, key = "cmp", index = 315, fmin = 0, fmax = 100)
+    >>> view.fourier_fx_domain(data, key = "off", index = 223750, fmin = 0, fmax = 100)
     '''    
     
     __check_keyword(key)
+    __check_index(data, key, index)
 
     byte, label = __keywords.get(key)
 
-    traces = np.where(data.attributes(byte)[:] == index)[0]
-    __check_index(data,key,index)
+    traces = np.where(data.attributes(byte)[:] == index)[0]    
     
-    # if len(traces)==0:
-    #     raise Exception("INVALID INDEX")
-        
-     
-
-    nx = len(traces)
-    
-    
-    
-    
-
-
-         
-    
-    #dx = 25.0  # choose according with input key
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
     
-
     seismic = data.trace.raw[:].T
     seismic = seismic[:, traces]
 
@@ -219,86 +239,18 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     for i in range(len(traces)):
         fx_seismic[:,i] *= 1.0 / np.max(fx_seismic[:,i]) 
 
-    scale = 0.99*np.std(seismic)
+    scale = 0.9*np.std(seismic)
 
     mask = np.logical_and(frequency >= fmin, frequency <= fmax)
 
-    floc = np.linspace(0, len(frequency[mask]), 11, dtype = int)
+    floc = np.linspace(0, len(frequency[mask])-1, 11, dtype = int)
     flab = np.around(frequency[floc], decimals = 1)
     
-    xloc=np.linspace(0, nx-1, 5, dtype = int)
-    xlab=np.around(xloc, decimals = 1)
-    
+    xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
+    xlab = traces[xloc]
     
     tloc = np.linspace(0, nt-1, 11, dtype = int)
     tlab = np.around(tloc*dt, decimals = 1)
-
-    fig, ax = plt.subplots(num = f"Common {label} gather with its 1D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
-
-    ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
-
-    ax[0].set_yticks(tloc)
-    ax[0].set_yticklabels(tlab)
-    # ax[0].set_xticks(xloc)
-    # ax[0].set_xticklabels(xlab)
-
-    ax[0].set_title(f"Input common {label} gather")
-    ax[0].set_ylabel("Two way time [s]")
-    # define axis values according with key
-    # define labels according with key
-    # define colorbar correctly
-
-    ax[1].imshow(np.abs(fx_seismic[mask,:]), aspect = "auto", cmap = "jet")
-    ax[1].set_yticks(floc)
-    ax[1].set_yticklabels(flab)
-    ax[1].set_xticks(xloc)
-    ax[1].set_xticklabels(xlab)
-    ax[1].set_title(f"Input common {label} gather")
-    ax[1].set_xlabel("Offset[m]")
-    ax[1].set_ylabel("Frequency [Hz]")
-
-    fig.tight_layout()
-    plt.show()
-
-# Jonatas
-def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
-    '''
-    Documentation
-    
-    
-    '''    
-    
-    __check_keyword(key)
-
-    byte, label = __keywords.get(key)
-
-    traces = np.where(data.attributes(byte)[:] == index)[0]
-
-    nx = len(traces)
-    dx = 25.0  # choose according with input key
-    nt = data.attributes(115)[0][0]
-    dt = data.attributes(117)[0][0] * 1e-6
-
-    seismic = data.trace.raw[:].T
-    seismic = seismic[:, traces]
-
-    fk_seismic = np.fft.fftshift(np.fft.fft2(seismic))
-
-    frequency = np.fft.fftshift(np.fft.fftfreq(nt, dt))
-    wavenumber = np.fft.fftshift(np.fft.fftfreq(nx, dx))
-
-    scale = 0.99*np.std(seismic)
-
-    xloc = np.linspace(0, nx, 5)
-    xlab = np.around(xloc*dx, decimals = 1)
-
-    tloc = np.linspace(0, nt, 11, dtype = int)
-    tlab = np.around(tloc*dt, decimals = 1)
-    
-    floc = np.linspace(frequency[0], frequency[-1], 11, dtype = int)
-    flab = np.around(frequency[floc], decimals = 1)
-
-    kloc = np.linspace(wavenumber[-1], wavenumber[0], 5)
 
     fig, ax = plt.subplots(num = f"Common {label} gather with its 1D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
 
@@ -309,19 +261,130 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     ax[0].set_xticks(xloc)
     ax[0].set_xticklabels(xlab)
 
-    ax[0].set_title(f"Input common {label} gather")
-    ax[0].set_ylabel("Two way time [s]")
-
-    fk_plot = ax[1].imshow(np.abs(fk_seismic), aspect = "auto", extent=[wavenumber[0],wavenumber[-1], frequency[0], frequency[-1]], cmap = "jet")
-    ax[1].set_title(f"Input FK domain")
-    ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]")
-    ax[1].set_ylabel("Frequency [Hz]")
+    ax[0].set_ylabel('Time [s]', fontsize = 15)
+    ax[0].set_xlabel('Trace number', fontsize = 15)
+    
+    fx = ax[1].imshow(np.abs(fx_seismic[mask,:]), aspect = "auto", cmap = "jet")
+   
     ax[1].set_yticks(floc)
     ax[1].set_yticklabels(flab)
-    ax[1].set_xticks(kloc)
+    ax[1].set_xticks(xloc)
+    ax[1].set_xticklabels(xlab)
+
+    ax[1].set_ylabel("Frequency [Hz]", fontsize = 15)
+    ax[1].set_xlabel("Trace number", fontsize = 15)
+
+    ax[0].cbar = fig.colorbar(im, ax = ax[0])
+    ax[0].cbar.set_label("Amplitude", fontsize = 15) 
+
+    ax[1].cbar = fig.colorbar(fx, ax = ax[1])
+    ax[1].cbar.set_label("Amplitude", fontsize = 15) 
+
+    fig.tight_layout()
+    plt.show()
+
+def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
+    '''
+    Plot the amplitude spectra of each trace in gather according to a specific header keyword.
     
-    fig.colorbar(im, ax=ax[0])
-    fig.colorbar(fk_plot, ax=ax[1])
+    ### Parameters:        
+    
+    data: segyio object.
+
+    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    
+    index: integer that select a common gather.  
+
+    fmin: minimum frequency to visualize    
+    
+    fmin: maximum frequency to visualize    
+    
+    ### Examples:
+
+    >>> view.fourier_fk_domain(data, key = "src", index = 51, fmin = 0, fmax = 100)
+    >>> view.fourier_fk_domain(data, key = "rec", index = 203, fmin = 0, fmax = 100)
+    >>> view.fourier_fk_domain(data, key = "cmp", index = 315, fmin = 0, fmax = 100)
+    >>> view.fourier_fk_domain(data, key = "off", index = 223750, fmin = 0, fmax = 100)
+    '''    
+    
+    __check_keyword(key)
+    __check_index(data, key, index)
+
+    byte, label = __keywords.get(key)
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+
+    seismic = data.trace.raw[:].T
+    seismic = seismic[:, traces]
+    
+    sx = data.attributes(73)[traces] / data.attributes(71)[traces]
+    sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
+    sz = data.attributes(45)[traces] / data.attributes(71)[traces]
+
+    rx = data.attributes(81)[traces] / data.attributes(69)[traces]
+    ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
+    rz = data.attributes(41)[traces] / data.attributes(69)[traces]
+    
+    distance = np.sqrt((sx - rx)**2 + (sy - ry)**2 + (sz - rz)**2)
+
+    nx = len(traces)
+    dh = np.median(np.abs(distance[1:] - distance[:-1])) 
+    
+    fk_seismic = np.fft.fftshift(np.fft.fft2(seismic))
+
+    frequency = np.fft.fftshift(np.fft.fftfreq(nt, dt))
+    wavenumber = np.fft.fftshift(np.fft.fftfreq(nx, dh))
+
+    mask = np.logical_and(frequency >= fmin, frequency <= fmax)
+
+    xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
+    xlab = traces[xloc]
+
+    tloc = np.linspace(0, nt-1, 11, dtype = int)
+    tlab = np.around(tloc*dt, decimals = 1)
+
+    floc = np.linspace(0, len(frequency[mask])-1, 11, dtype = int)
+    flab = np.around(frequency[mask][floc][::-1], decimals = 1)
+
+    kloc = np.linspace(0, len(wavenumber)-1, 5, dtype = int)
+    klab = np.around(wavenumber[kloc], decimals = 3)
+
+    scale = 0.9*np.std(seismic)
+    
+    fig, ax = plt.subplots(num = f"Common {label} gather with its 1D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
+
+    im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+
+    ax[0].set_yticks(tloc)
+    ax[0].set_yticklabels(tlab)
+    ax[0].set_xticks(xloc)
+    ax[0].set_xticklabels(xlab)
+
+    ax[0].set_ylabel('Time [s]', fontsize = 15)
+    ax[0].set_xlabel('Trace number', fontsize = 15)
+
+    fk = ax[1].imshow(np.abs(fk_seismic[mask,:][::-1]), aspect = "auto", cmap = "jet")
+    
+    ax[1].set_yticks(floc)
+    ax[1].set_yticklabels(flab)
+
+    ax[1].set_xticks(kloc)
+    ax[1].set_xticklabels(klab)
+
+    ax[1].set_ylabel("Frequency [Hz]", fontsize = 15)
+    ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]", fontsize = 15)
+
+    ax[1].set_ylabel("Frequency [Hz]")
+
+    ax[0].cbar = fig.colorbar(im, ax = ax[0])
+    ax[0].cbar.set_label("Amplitude", fontsize = 15) 
+
+    ax[1].cbar = fig.colorbar(fk, ax = ax[1])
+    ax[1].cbar.set_label("Amplitude", fontsize = 15) 
+    
     fig.tight_layout()
     plt.show()
 
