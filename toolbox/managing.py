@@ -1,21 +1,16 @@
+import numpy as np
 import segyio as sgy
 
-def import_sgy_file(filename : str) -> sgy.SegyFile:
-    '''
-    Documentation
-    
+def import_sgy_file(filename : str) -> sgy.SegyFile:    
 
-    '''
-    
     return sgy.open(filename, ignore_geometry = True)
 
+def export_sgy_file(data : sgy.SegyFile, filename : str) -> None:
+
+    pass 
+
 def show_binary_header(data : sgy.SegyFile) -> None:
-    '''
-    Documentation
 
-
-    '''
-    
     binHeader = sgy.binfield.keys
     print("\n Checking binary header \n")
     print(f"{'key':>25s} {'byte':^6s} {'value':^7s} \n")
@@ -24,11 +19,6 @@ def show_binary_header(data : sgy.SegyFile) -> None:
             print(f"{k:>25s} {str(v):^6s} {str(data.bin[v]):^7s}")
 
 def show_trace_header(data : sgy.SegyFile) -> None:    
-    '''
-    Documentation
-
-
-    '''
 
     traceHeader = sgy.tracefield.keys
     print("\n Checking trace header \n")
@@ -37,3 +27,12 @@ def show_trace_header(data : sgy.SegyFile) -> None:
         first = data.attributes(v)[0][0]
         last = data.attributes(v)[data.tracecount-1][0]
         print(f"{k:>40s} {str(v):^6s} {str(first):^11s} {str(last):^11s}")
+
+def slice_trace_gather(data : sgy.SegyFile, key : str, index : int) -> sgy.SegyFile:
+
+    pass
+
+def edit_header_attribute(data : sgy.SegyFile, keyword : int, attribute : np.ndarray) -> sgy.SegyFile:
+
+    pass
+

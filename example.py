@@ -6,20 +6,14 @@ input_file = "data/overthrust_synthetic_seismic_data.sgy"
 
 data = mng.import_sgy_file(input_file)
 
-mng.show_trace_header(data)
-
 key = 'src'
 
-indexes = view.keyword_indexes(data, key)
+index = 200
 
-# print(indexes)
-
-index = 145
-
-view.seismic(data, key, index)
+view.gather(data, key, index)
 view.geometry(data, key, index)
-# view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 100)
-# view.fourier_fk_domain(data, key, index, fmin = 0, fmax = 100)
+view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 100)
+view.fourier_fk_domain(data, key, index, fmin = 0, fmax = 100)
 
 # fmin = 2    
 # fmax = 50

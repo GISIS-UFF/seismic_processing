@@ -18,7 +18,7 @@ def __check_index(data : sgy.SegyFile, key : str, index : int ) -> None:
     
     if index not in keyword_indexes(data, key):
         print("\033[31mInvalid index choice!\033[m\
-                     \nPlease use the function \033[33mkeyword_indexes\033[m to choose a properly index.")
+                     \nPlease use the function \033[33mview.keyword_indexes\033[m to choose a properly index.")
         exit()
 
 def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
@@ -45,9 +45,9 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
 
     return np.unique(data.attributes(byte))
 
-def seismic(data : sgy.SegyFile, key : str, index : int) -> None:
+def gather(data : sgy.SegyFile, key : str, index : int) -> None:
     '''
-    Plot a seismic gather according to a specific header keyword.
+    Plot a prestack seismic gather according to a specific header keyword.
     
     ### Parameters:        
     
@@ -133,69 +133,114 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
-    sx_test = data.attributes(73)[:] / data.attributes(71)[:]
-    sz_test = data.attributes(73)[:] / data.attributes(71)[:]
+    sx_complete = data.attributes(73)[:] / data.attributes(71)[:]
+    sy_complete = data.attributes(77)[:] / data.attributes(71)[:]    
 
+    rx_complete = data.attributes(81)[:] / data.attributes(69)[:]
+    ry_complete = data.attributes(85)[:] / data.attributes(69)[:]    
 
-    sx = data.attributes(73)[traces] / data.attributes(71)[traces]
-    sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
-    sz = data.attributes(45)[traces] / data.attributes(71)[traces]
+    _, cmp_index, cmp_count = np.unique(data.attributes(25)[:], return_index = True, return_counts = True)          
 
-    rx = data.attributes(81)[traces] / data.attributes(69)[traces]
-    ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
-    rz = data.attributes(41)[traces] / data.attributes(69)[traces]
+    cmpx = data.attributes(181)[cmp_index] / data.attributes(69)[cmp_index]
+    cmpy = data.attributes(185)[cmp_index] / data.attributes(69)[cmp_index]
 
-    cmpx = data.attributes(181)[traces] / data.attributes(69)[traces]
-    cmpy = data.attributes(185)[traces] / data.attributes(69)[traces]
+    xmin = min(np.min(sx_complete), np.min(rx_complete)) - 100
+    xmax = max(np.max(sx_complete), np.max(rx_complete)) + 150
 
-    cmp_trace, traces_per_cmp = np.unique(data.attributes(25)[:], return_counts = True)          
-   
-    print(cmp_trace, traces_per_cmp)
+    ymin = min(np.min(sy_complete), np.min(ry_complete)) - 100
+    ymax = max(np.max(sy_complete), np.max(ry_complete)) + 100
 
-    plot_data = {
-        "cmp": (cmpx, cmpy, 'ob'),
-        "receiver": (rx, ry, 'oy'),
-        "shot": (sx, sy, 'og')
-    }
+    xloc = np.linspace(xmin, xmax, 5)
+    yloc = np.linspace(ymin, ymax, 5)
 
-    plot_title = {
-        "src": f"Common Shot Gather number {index}",
-        "cmp": f"Common Mid Point Gather number {index}",
-        "off": f"Common Offset Gather number {index}"
-    }
+    xlab = np.array(xloc, dtype = int)
+    ylab = np.array(yloc, dtype = int)
 
-    plot_order = {
-        "src": ["cmp", "receiver", "shot"],
-        "cmp": ["shot", "receiver", "cmp"],
-        "off": ["receiver", "shot", "cmp"]
-    }
-    
-    fig, ax = plt.subplots(num = f"Common {label} gather", nrows = 3, ncols = 1, figsize = (10, 5))
+    fig, ax = plt.subplots(num = f"Common {label} gather geometry", ncols = 3, nrows = 1, figsize = (15, 5))
 
-    ax[2].scatter(sx, sy, c = sz, cmap = "viridis", label="Sources")
-    ax[2].set_title("Geometry", fontsize=15)
-    im2 = ax[2].scatter(rx, ry, c = rz, cmap = "viridis", label="Receivers")
-    ax[2].cbar = fig.colorbar(im2, ax = ax[2])
-    ax[2].cbar.set_label("Receiver Depth", fontsize = 15) # não consegui entender como funciona esse "c = arg"
-        
-    ax[1].scatter(cmpx, cmpy, label="CMP per Trace")
+    def set_config(p):
+        ax[p].set_xlabel("X [m]", fontsize = 15)
+        ax[p].set_ylabel("y [m]", fontsize = 15)
+        ax[p].set_xticks(xloc)
+        ax[p].set_yticks(yloc)
+        ax[p].set_xticklabels(xlab)
+        ax[p].set_yticklabels(ylab)
+        ax[p].set_xlim([xmin, xmax])
+        ax[p].set_ylim([ymin, ymax])
 
+    ax[0].plot(rx_complete, ry_complete, "v")
+    ax[0].plot(sx_complete, sy_complete, "*")
+    ax[0].set_title("Complete geometry", fontsize = 15)
+    set_config(0)
 
-    if key in plot_order:
-        for element in plot_order[key]:
-            ax[0].plot(*plot_data[element], label=element)
-            ax[0].set_title(plot_title[key], fontsize=15)
+    im = ax[1].scatter(cmpx, cmpy, c = cmp_count, cmap = "Greys")
+    cbar = fig.colorbar(im, ax = ax[1])
+    cbar.set_label("Traces per CMP", fontsize = 15, loc = "center")
+    ax[1].set_title("Coverage", fontsize = 15)
+    set_config(1)
 
-    for i in range(len(ax)):
-        ax[i].set_xlabel("Distance [m]", fontsize=12)
-        ax[i].legend(loc="lower left")
-        ax[i].set_xticks(np.linspace(rx.min(), rx.max(), 11, dtype=int))
-        ax[i].set_xticklabels(np.array(np.linspace(0, 15000, 11, dtype=int))) # Como que eu consigo achar esse 15k de forma legit(?)
+    ax[2].plot(rx_complete[traces], ry_complete[traces], "v")
+    ax[2].plot(sx_complete[traces], sy_complete[traces], "*")
+    ax[2].set_title("Local geometry", fontsize = 15)
+    set_config(2)
 
     fig.tight_layout()
-    plt.gca().invert_yaxis()
-
     plt.show()
+
+    # sx = data.attributes(73)[traces] / data.attributes(71)[traces]
+    # sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
+    # sz = data.attributes(45)[traces] / data.attributes(71)[traces]
+
+    # rx = data.attributes(81)[traces] / data.attributes(69)[traces]
+    # ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
+    # rz = data.attributes(41)[traces] / data.attributes(69)[traces]
+   
+    # print(cmp_trace, traces_per_cmp)
+
+    # plot_data = {
+    #     "cmp": (cmpx, cmpy, 'ob'),
+    #     "receiver": (rx, ry, 'oy'),
+    #     "shot": (sx, sy, 'og')
+    # }
+
+    # plot_title = {
+    #     "src": f"Common Shot Gather number {index}",
+    #     "cmp": f"Common Mid Point Gather number {index}",
+    #     "off": f"Common Offset Gather number {index}"
+    # }
+
+    # plot_order = {
+    #     "src": ["cmp", "receiver", "shot"],
+    #     "cmp": ["shot", "receiver", "cmp"],
+    #     "off": ["receiver", "shot", "cmp"]
+    # }
+    
+    # fig, ax = plt.subplots(num = f"Common {label} gather", nrows = 3, ncols = 1, figsize = (10, 5))
+
+    # ax[2].scatter(sx, sy, c = sz, cmap = "viridis", label="Sources")
+    # ax[2].set_title("Geometry", fontsize=15)
+    # im2 = ax[2].scatter(rx, ry, c = rz, cmap = "viridis", label="Receivers")
+    # ax[2].cbar = fig.colorbar(im2, ax = ax[2])
+    # ax[2].cbar.set_label("Receiver Depth", fontsize = 15) # não consegui entender como funciona esse "c = arg"
+        
+    # ax[1].scatter(cmpx, cmpy, label="CMP per Trace")
+
+
+    # if key in plot_order:
+    #     for element in plot_order[key]:
+    #         ax[0].plot(*plot_data[element], label=element)
+    #         ax[0].set_title(plot_title[key], fontsize=15)
+
+    # for i in range(len(ax)):
+    #     ax[i].set_xlabel("Distance [m]", fontsize=12)
+    #     ax[i].legend(loc="lower left")
+    #     ax[i].set_xticks(np.linspace(rx.min(), rx.max(), 11, dtype=int))
+    #     ax[i].set_xticklabels(np.array(np.linspace(0, 15000, 11, dtype=int))) # Como que eu consigo achar esse 15k de forma legit(?)
+
+    # fig.tight_layout()
+    # plt.gca().invert_yaxis()
+
+    # plt.show()
 
 def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
     '''
@@ -245,7 +290,7 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     mask = np.logical_and(frequency >= fmin, frequency <= fmax)
 
     floc = np.linspace(0, len(frequency[mask])-1, 11, dtype = int)
-    flab = np.around(frequency[floc], decimals = 1)
+    flab = np.around(np.ceil(frequency[floc]), decimals = 1)
     
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
     xlab = traces[xloc]
@@ -264,7 +309,10 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
 
     ax[0].set_ylabel('Time [s]', fontsize = 15)
     ax[0].set_xlabel('Trace number', fontsize = 15)
-    
+
+    ax[0].cbar = fig.colorbar(im, ax = ax[0])
+    ax[0].cbar.set_label("Amplitude", fontsize = 15) 
+
     fx = ax[1].imshow(np.abs(fx_seismic[mask,:]), aspect = "auto", cmap = "jet")
    
     ax[1].set_yticks(floc)
@@ -274,9 +322,6 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
 
     ax[1].set_ylabel("Frequency [Hz]", fontsize = 15)
     ax[1].set_xlabel("Trace number", fontsize = 15)
-
-    ax[0].cbar = fig.colorbar(im, ax = ax[0])
-    ax[0].cbar.set_label("Amplitude", fontsize = 15) 
 
     ax[1].cbar = fig.colorbar(fx, ax = ax[1])
     ax[1].cbar.set_label("Amplitude", fontsize = 15) 
@@ -348,7 +393,7 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     tlab = np.around(tloc*dt, decimals = 1)
 
     floc = np.linspace(0, len(frequency[mask])-1, 11, dtype = int)
-    flab = np.around(frequency[mask][floc][::-1], decimals = 1)
+    flab = np.around(np.ceil(frequency[mask][floc][::-1]), decimals = 1)
 
     kloc = np.linspace(0, len(wavenumber)-1, 5, dtype = int)
     klab = np.around(wavenumber[kloc], decimals = 3)
