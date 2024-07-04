@@ -1,0 +1,18 @@
+Generic Workflow for Didactic Purposes
+
+1. General Analysis of the Data: The tools should be able to display header content, shot images, and spectral analysis. Throughout the entire processing flow, after each step, this data will be checked for quality control.*
+2. Frequency Filters: Bandpass and slope.*
+3. Static Filter*
+4. Debubble: Debubble by deconvolution.*
+5. Deghost*
+6. Debubble*
+7. Velocity Analysis: Picking velocities for the first stack. The user needs to see the semblance, velocity model, and stacked CDP gather.*
+8. Mute: Mute the direct wave.*
+9. Water Depth
+10. Spherical Divergence
+11. Surface-Related Multiple Removal*
+12. Velocity Analysis
+13. FK Filter
+14. Final Stack*
+
+*most important steps
