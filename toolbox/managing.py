@@ -28,6 +28,10 @@ def show_trace_header(data : sgy.SegyFile) -> None:
         last = data.attributes(v)[data.tracecount-1][0]
         print(f"{k:>40s} {str(v):^6s} {str(first):^11s} {str(last):^11s}")
 
+def select_trace_gather():
+
+    pass    
+
 def slice_trace_gather(data : sgy.SegyFile, key : str, index : int) -> sgy.SegyFile:
 
     pass

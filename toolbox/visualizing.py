@@ -434,6 +434,144 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     fig.tight_layout()
     plt.show()
 
+def radon_tp_domain():
+
+# """
+# Created on Mon Feb 16 12:00:56 2015
+
+# @author: msacchi
+# """
+
+# from numba import jit
+# import numpy as np
+
+# @jit(nopython=True)
+# def radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
+
+# # Adjoint Time-domain Parabolic Radon Operator
+
+# # d(nt,nh): data
+# # dt      : sampling interval
+# # h(Nh)   : offset
+# # p(Np)   : curvature of parabola
+# # href    : reference offset
+# # Returns m(nt,np) the Radon coefficients 
+
+# # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+
+ 
+#     m=np.zeros((Nt,Np))
+
+#     for itau in range(0,Nt):
+#         for ih in range(0,Nh):
+#             for ip in range(0,Np):
+#                 t = (itau)*dt+p[ip]*(h[ih]/href)**2
+#                 it = int(t/dt)
+#                 if it<Nt:
+#                     if it>0:
+#                         m[itau,ip] +=  d[it,ih]
+    
+#     return m
+        
+
+# def radon_forward(m,Nt,dt,Nh,h,Np,p,href):
+
+# # Forward Time-domain Parabolic Radon Transform
+
+# # m(nt,nh): Radon coefficients 
+# # dt      : sampling interval
+# # h(Nh)   : offset
+# # p(Np)   : curvature of parabola
+# # href    : reference offset
+# # Returns d(nt,nh) the synthetized data from the Radon coefficients
+
+# # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+
+#     d=np.zeros((Nt,Nh))
+      
+#     for itau in range(0,Nt):
+#         for ih in range(0,Nh):
+#             for ip in range(0,Np):
+#                 t = (itau)*dt+p[ip]*(h[ih]/href)**2
+#                 it=int(t/dt)
+#                 if it<Nt:
+#                     if it>=0:
+#                         d[it,ih] +=  m[itau,ip]                   
+#     return d
+    
+
+# def radon_cg(d,m0,Nt,dt,Nh,h,Np,p,href,Niter):
+         
+# # LS Radon transform. Finds the Radon coefficients by minimizing
+# # ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
+# # The solution is found via CGLS with operators L and L^T applied on the
+# # flight
+
+# # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+
+#     m = m0  
+    
+#     s = d-radon_forward(m,Nt,dt,Nh,h,Np,p,href) # d - Lm
+#     pp = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # pp = L's 
+#     r = pp
+#     q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href)
+#     old = np.sum(np.sum(r*r))
+#     print("iter","  res")
+    
+#     for k in range(0,Niter):
+#          alpha = np.sum(np.sum(r*r))/np.sum(np.sum(q*q))
+#          m +=  alpha*pp
+#          s -=  alpha*q
+#          r = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # r= L's
+#          new = np.sum(np.sum(r*r))
+#          print(k, new)
+#          beta = new/old
+#          old = new
+#          pp = r + beta*pp
+#          q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href) # q=L pp
+           
+#     return m 
+
+    pass         
+
+def semblance():
+
+# nt = 5001
+# dt = 1e-3
+
+# nx = 161
+# dx = 25.0
+
+# vi = 1000
+# vf = 3000
+# dv = 50
+
+# filename = f"cmp_gather_{nt}x{nx}_{dt*1e6:.0f}us.bin"
+
+# seismic = np.fromfile(filename, dtype = np.float32, count = nt*nx)
+# seismic = np.reshape(seismic, [nt,nx], order = "F")
+
+# vrms = np.arange(vi, vf + dv, dv)
+# offset = np.arange(nx, dtype = int)
+
+# time = np.arange(nt) * dt
+
+# semblance = np.zeros((nt, len(vrms)))
+
+# for indt, t0 in enumerate(time):
+#     for indv, v in enumerate(vrms):
+    
+#         target = np.array(np.sqrt(t0**2 + (offset*dx/v)**2) / dt, dtype = int) 
+
+#         mask = target < nt
+    
+#         t = target[mask]
+#         x = offset[mask]
+    
+#         semblance[indt, indv] = np.sum(np.abs(seismic[t,x]))**2    
+
+    pass
+
 def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : int) -> None:
     '''
     Documentation
