@@ -133,16 +133,16 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
-    sx_complete = data.attributes(73)[:] / data.attributes(71)[:]
-    sy_complete = data.attributes(77)[:] / data.attributes(71)[:]    
+    sx_complete = data.attributes(73)[:] 
+    sy_complete = data.attributes(77)[:]     
 
-    rx_complete = data.attributes(81)[:] / data.attributes(69)[:]
-    ry_complete = data.attributes(85)[:] / data.attributes(69)[:]    
+    rx_complete = data.attributes(81)[:] 
+    ry_complete = data.attributes(85)[:]     
 
-    _, cmp_index, cmp_count = np.unique(data.attributes(25)[:], return_index = True, return_counts = True)          
+    # _, cmp_index, cmp_count = np.unique(data.attributes(25)[:], return_index = True, return_counts = True)          
 
-    cmpx = data.attributes(181)[cmp_index] / data.attributes(69)[cmp_index]
-    cmpy = data.attributes(185)[cmp_index] / data.attributes(69)[cmp_index]
+    cmpx = data.attributes(181)[:] 
+    cmpy = data.attributes(185)[:] 
 
     xmin = min(np.min(sx_complete), np.min(rx_complete)) - 100
     xmax = max(np.max(sx_complete), np.max(rx_complete)) + 150
@@ -161,21 +161,21 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     def set_config(p):
         ax[p].set_xlabel("X [m]", fontsize = 15)
         ax[p].set_ylabel("y [m]", fontsize = 15)
-        ax[p].set_xticks(xloc)
-        ax[p].set_yticks(yloc)
-        ax[p].set_xticklabels(xlab)
-        ax[p].set_yticklabels(ylab)
-        ax[p].set_xlim([xmin, xmax])
-        ax[p].set_ylim([ymin, ymax])
+        # ax[p].set_xticks(xloc)
+        # ax[p].set_yticks(yloc)
+        # ax[p].set_xticklabels(xlab)
+        # ax[p].set_yticklabels(ylab)
+        # ax[p].set_xlim([xmin, xmax])
+        # ax[p].set_ylim([ymin, ymax])
 
     ax[0].plot(rx_complete, ry_complete, "v")
     ax[0].plot(sx_complete, sy_complete, "*")
     ax[0].set_title("Complete geometry", fontsize = 15)
     set_config(0)
 
-    im = ax[1].scatter(cmpx, cmpy, c = cmp_count, cmap = "Greys")
-    cbar = fig.colorbar(im, ax = ax[1])
-    cbar.set_label("Traces per CMP", fontsize = 15, loc = "center")
+    ax[1].plot(cmpx, cmpy, ".")
+    # cbar = fig.colorbar(im, ax = ax[1])
+    # cbar.set_label("Traces per CMP", fontsize = 15, loc = "center")
     ax[1].set_title("Coverage", fontsize = 15)
     set_config(1)
 

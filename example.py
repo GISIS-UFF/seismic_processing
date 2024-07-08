@@ -2,18 +2,20 @@ from toolbox import managing as mng
 from toolbox import filtering as filter
 from toolbox import visualizing as view
 
-input_file = "data/overthrust_synthetic_seismic_data.sgy"
+input_file = "data/teapot_dome_3D_survey.sgy"
 
 data = mng.import_sgy_file(input_file)
 
+mng.show_trace_header(data)
+
 key = 'src'
 
-index = 200
+index = 14
 
 view.gather(data, key, index)
 view.geometry(data, key, index)
-view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 100)
-view.fourier_fk_domain(data, key, index, fmin = 0, fmax = 100)
+# view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 100)
+# view.fourier_fk_domain(data, key, index, fmin = 0, fmax = 100)
 
 # fmin = 2    
 # fmax = 50
