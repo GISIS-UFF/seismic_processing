@@ -3,6 +3,8 @@ import segyio as sgy
 
 def import_sgy_file(filename : str) -> sgy.SegyFile:    
 
+    # verify if filename exists!!
+
     return sgy.open(filename, ignore_geometry = True)
 
 def export_sgy_file(data : sgy.SegyFile, filename : str) -> None:
