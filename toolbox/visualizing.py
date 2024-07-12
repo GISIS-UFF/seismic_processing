@@ -616,6 +616,25 @@ def semblance():
 def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : int) -> None:
     '''
     Documentation
+    Plot a prestack seismic , filtered seismic and difference of each trace in gather according to a specific header keyword
+    
+    ### Parameters:        
+    
+    input: segyio object.
+    
+    output: segyio object.
+
+    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    
+    index: integer that select a common gather.  
+
+    ### Examples:
+
+    >>> view.difference(data,data_filt, key = "src", index = 51)
+    >>> view.difference(data,data_filt, key = "rec", index = 203)
+    >>> view.difference(data,data_filt, key = "cmp", index = 315)
+    >>> view.difference(data,data_filt, key = "off", index = 223750)
+
     
     
     '''    
@@ -626,6 +645,8 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
     byte, label = __keywords.get(key)
 
     traces = np.where(input.attributes(byte)[:] == index)[0]
+    nt = input.attributes(115)[0][0]
+    dt = input.attributes(117)[0][0] * 1e-6
 
     seismic_input = input.trace.raw[:].T
     seismic_input = seismic_input[:, traces]
@@ -638,15 +659,44 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
     scale = 0.99*np.std(seismic_input)
 
     fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 3, nrows = 1, figsize = (18, 5))
+    def set_config(p, title , fx,nt,dt):
+        
+        
+    
+    
+        frequency = np.fft.fftfreq(nt, dt)
+        
+        
+        xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
+        xlab = traces[xloc]
+    
+        tloc = np.linspace(0, nt-1, 11, dtype = int)
+        tlab = np.around(tloc*dt, decimals = 1)
+        
+        ax[p].set_yticks(tloc)
+        ax[p].set_yticklabels(tlab)
+        ax[p].set_xticks(xloc)
+        ax[p].set_xticklabels(xlab)
+        
+        ax[p].title.set_text(f'{title}')
+        
+        ax[p].set_xlabel('Trace number', fontsize = 15)
+        
+        ax[p].set_ylabel('Time [s]', fontsize = 15)
+        
+        ax[1].cbar = fig.colorbar(fx, ax = ax[p])
+        
+        ax[1].cbar.set_label("Amplitude", fontsize = 15) 
 
-    ax[0].imshow(seismic_input, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
+    fx =ax[0].imshow(seismic_input, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    set_config(0,'seismic_input',fx,nt,dt)
 
-    ax[1].imshow(seismic_output, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    fx1=ax[1].imshow(seismic_output, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    set_config(1,'seismic_output',fx1,nt,dt)
 
-
-    ax[2].imshow(seismic_diff, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
-
+    fx2=ax[2].imshow(seismic_diff, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    set_config(2,'seismic_diff',fx2,nt,dt)
     # define axis values according with key
     # define labels according with key
     # define colorbar correctly
