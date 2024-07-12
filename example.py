@@ -18,7 +18,7 @@ indexes = view.keyword_indexes(data, key)
 
 print(indexes)
 
-index = 238
+index = 286
 
 view.gather(data, key, index)
 # view.geometry(data, key, index)

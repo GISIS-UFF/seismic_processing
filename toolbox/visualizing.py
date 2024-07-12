@@ -168,21 +168,24 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
         # ax[p].set_xlim([xmin, xmax])
         # ax[p].set_ylim([ymin, ymax])
 
-    ax[0].plot(rx_complete, ry_complete, "v")
-    ax[0].plot(sx_complete, sy_complete, "*")
+    ax[0].plot(rx_complete, ry_complete, "v", label="Receivers")
+    ax[0].plot(sx_complete, sy_complete, "*", label="Sources")
     ax[0].set_title("Complete geometry", fontsize = 15)
     set_config(0)
 
-    ax[1].plot(cmpx, cmpy, ".")
+    ax[1].plot(cmpx, cmpy, ".", label="CMP")
     # cbar = fig.colorbar(im, ax = ax[1])
     # cbar.set_label("Traces per CMP", fontsize = 15, loc = "center")
     ax[1].set_title("Coverage", fontsize = 15)
     set_config(1)
 
-    ax[2].plot(rx_complete[traces], ry_complete[traces], "v")
-    ax[2].plot(sx_complete[traces], sy_complete[traces], "*")
+    ax[2].plot(rx_complete[traces], ry_complete[traces], "v", label="Receivers")
+    ax[2].plot(sx_complete[traces], sy_complete[traces], "*", label="Sources")
     ax[2].set_title("Local geometry", fontsize = 15)
     set_config(2)
+
+    for i in range(len(ax)):
+        ax[i].legend(loc="lower left")
 
     fig.tight_layout()
     plt.show()
