@@ -2,12 +2,13 @@ import numpy as np
 import segyio as sgy
 
 def import_sgy_file(filename : str) -> sgy.SegyFile:    
-
+    # Davi
     # verify if filename exists!!
 
-    return sgy.open(filename, ignore_geometry = True)
+    return sgy.open(filename, ignore_geometry = True, mode = "r+")
 
 def export_sgy_file(data : sgy.SegyFile, filename : str) -> None:
+    # Anthony
 
     pass 
 
@@ -35,6 +36,7 @@ def extract_trace_gather():
     pass    
 
 def edit_header_attribute(data : sgy.SegyFile, keyword : int, attribute : np.ndarray) -> sgy.SegyFile:
+    # Davi
 
     pass
 

@@ -435,7 +435,7 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     plt.show()
 
 def radon_tp_domain():
-
+# Jonatas CMP domain
 # """
 # Created on Mon Feb 16 12:00:56 2015
 
@@ -465,7 +465,7 @@ def radon_tp_domain():
 #     for itau in range(0,Nt):
 #         for ih in range(0,Nh):
 #             for ip in range(0,Np):
-#                 t = (itau)*dt+p[ip]*(h[ih]/href)**2
+#                 t = (itau)*dt + p[ip]*(h[ih]/href)**2
 #                 it = int(t/dt)
 #                 if it<Nt:
 #                     if it>0:
@@ -535,6 +535,7 @@ def radon_tp_domain():
     pass         
 
 def semblance():
+# Amanda CMP domain
 
 # nt = 5001
 # dt = 1e-3
@@ -570,6 +571,43 @@ def semblance():
     
 #         semblance[indt, indv] = np.sum(np.abs(seismic[t,x]))**2    
 
+# xloc = np.linspace(0, len(vrms)-1, 9)
+# xlab = np.linspace(vi, vf, 9)
+
+# tloc = np.linspace(0, nt, 11)
+# tlab = np.around(np.linspace(0, nt-1, 11)*dt, decimals = 3)
+
+# scale = 15.0*np.std(semblance)
+
+# fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10,8))
+
+# ax[0].imshow(seismic, aspect = "auto", cmap = "Greys")
+# ax[0].set_yticks(tloc)
+# ax[0].set_yticklabels(tlab)
+
+# ax[0].set_xticks(np.linspace(0,nx,5))
+# ax[0].set_xticklabels(np.linspace(0,nx-1,5, dtype = int)*dx)
+
+# ax[0].set_title("CMP Gather", fontsize = 18)
+# ax[0].set_xlabel("Offset [m]", fontsize = 15)
+# ax[0].set_ylabel("Two Way Time [s]", fontsize = 15)
+
+# ax[1].imshow(semblance, aspect = "auto", cmap = "jet", vmin = -scale, vmax = scale)
+
+# ax[1].set_xticks(xloc)
+# ax[1].set_xticklabels(xlab*1e-3)
+
+# ax[1].set_yticks(tloc)
+# ax[1].set_yticklabels(tlab)
+
+# ax[1].set_title("Semblance", fontsize = 18)
+# ax[1].set_xlabel("RMS Velocity [km/s]", fontsize = 15)
+# ax[1].set_ylabel("Two Way Time [s]", fontsize = 15)
+
+# fig.tight_layout()
+# plt.grid()
+# plt.show()
+
     pass
 
 def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : int) -> None:
@@ -578,6 +616,8 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
     
     
     '''    
+    # Anthony
+
     __check_keyword(key)
 
     byte, label = __keywords.get(key)
