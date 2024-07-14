@@ -1,6 +1,7 @@
 import numpy as np
 import segyio as sgy
 import matplotlib.pyplot as plt
+from toolbox import managing as mng
 
 __keywords = {'src' : [9,  'shot'], 
               'rec' : [13, 'receiver'], 
@@ -661,11 +662,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
     fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 3, nrows = 1, figsize = (18, 5))
     def set_config(p, title , fx,nt,dt):
         
-        
-    
-    
         frequency = np.fft.fftfreq(nt, dt)
-        
         
         xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
         xlab = traces[xloc]
@@ -679,7 +676,6 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
         ax[p].set_xticklabels(xlab)
         
         ax[p].title.set_text(f'{title}')
-        
         ax[p].set_xlabel('Trace number', fontsize = 15)
         
         ax[p].set_ylabel('Time [s]', fontsize = 15)
@@ -703,4 +699,9 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
         
     fig.tight_layout()
     plt.show()
-
+    
+    #criação dado seismic_diff em sgy
+    sgy.tools.from_array2D('difference',seismic_diff.T)
+    diff = sgy.open('difference', "r+", ignore_geometry = True)
+    diff.header = output.header
+    

@@ -9,8 +9,29 @@ def import_sgy_file(filename : str) -> sgy.SegyFile:
 
 def export_sgy_file(data : sgy.SegyFile, filename : str) -> None:
     # Anthony
+    dt = data.attributes(117)[0][0] 
 
-    pass 
+    # Criar um novo arquivo SEG-Y
+    spec = sgy.spec()
+    spec.samples = data.samples
+    spec.tracecount = data.tracecount
+    spec.format = data.format
+
+    
+    with sgy.create(filename, spec) as f:
+        
+        for i in range(data.tracecount):
+            f.trace[i] = data.trace[i]
+        
+        
+        f.bin = data.bin
+        
+       
+        for i in range(data.tracecount):
+            f.header[i] = data.header[i]
+            f.header[i][sgy.TraceField.TRACE_SAMPLE_INTERVAL] = dt
+
+     
 
 def show_binary_header(data : sgy.SegyFile) -> None:
 
