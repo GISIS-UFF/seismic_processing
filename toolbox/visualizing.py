@@ -701,7 +701,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
     plt.show()
     
     #criação dado seismic_diff em sgy
-    sgy.tools.from_array2D('difference',seismic_diff.T)
-    diff = sgy.open('difference', "r+", ignore_geometry = True)
-    diff.header = output.header
+    #sgy.tools.from_array2D('difference',seismic_diff.T)
+    #diff = sgy.open('difference', "r+", ignore_geometry = True)
+    #diff.header = output.header
     
