@@ -10,17 +10,17 @@ input_file4 ="data/npr3_field.sgy" #Teapot dome 3D survey (HEAVY FILE)
 
 data = mng.import_sgy_file(input_file2)
 
-mng.show_trace_header(data)
+#mng.show_trace_header(data)
 
-key = 'src'
+# key = 'src'
 
-indexes = view.keyword_indexes(data, key)
+# indexes = view.keyword_indexes(data, key)
 
-print(indexes)
+# print(indexes)
 
-index = 286
+# index = 286
 
-view.gather(data, key, index)
+# view.gather(data, key, index)
 # view.geometry(data, key, index)
 # view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 100)
 # view.fourier_fk_domain(data, key, index, fmin = 0, fmax = 100)
