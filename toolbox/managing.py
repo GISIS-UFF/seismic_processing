@@ -1,11 +1,13 @@
 import numpy as np
 import segyio as sgy
 
-def import_sgy_file(filename : str) -> sgy.SegyFile:    
-    # Davi
-    # verify if filename exists!!
+def import_sgy_file(filename: str) -> sgy.SegyFile:
 
-    return sgy.open(filename, ignore_geometry = True, mode = "r+")
+    try:
+        return sgy.open(filename, ignore_geometry=True, mode="r+")
+    except FileNotFoundError:
+        print("File does not exist. Please verify the file path.")
+        exit()
 
 def export_sgy_file(data : sgy.SegyFile, filename : str) -> None:
     # Anthony
@@ -30,8 +32,6 @@ def export_sgy_file(data : sgy.SegyFile, filename : str) -> None:
         for i in range(data.tracecount):
             f.header[i] = data.header[i]
             f.header[i][sgy.TraceField.TRACE_SAMPLE_INTERVAL] = dt
-
-     
 
 def show_binary_header(data : sgy.SegyFile) -> None:
 
@@ -58,6 +58,7 @@ def extract_trace_gather():
 
 def edit_header_attribute(data : sgy.SegyFile, keyword : int, attribute : np.ndarray) -> sgy.SegyFile:
     # Davi
-
+    # bora ver se vai dar tempo para fazer na sexta feira depois do campo do Francisco
+    current_data_header = np.where(data.attributes(keyword)[:] == attribute)[0]
     pass
 
