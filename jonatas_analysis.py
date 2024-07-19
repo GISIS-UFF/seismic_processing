@@ -7,6 +7,11 @@ Created on Mon Feb 16 12:00:56 2015
 
 from numba import jit
 import numpy as np
+import matplotlib.pyplot as plt
+
+import sys  
+sys.path.append('./src') 
+
 
 @jit(nopython=True)
 def radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
@@ -29,7 +34,7 @@ def radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
         for ih in range(0,Nh):
             for ip in range(0,Np):
                 t = (itau)*dt+p[ip]*(h[ih]/href)**2
-                it = np.int(t/dt)
+                it = int(t/dt)
                 if it<Nt:
                     if it>0:
                         m[itau,ip] +=  d[it,ih]
@@ -56,7 +61,7 @@ def radon_forward(m,Nt,dt,Nh,h,Np,p,href):
         for ih in range(0,Nh):
             for ip in range(0,Np):
                 t = (itau)*dt+p[ip]*(h[ih]/href)**2
-                it=np.int(t/dt)
+                it=int(t/dt)
                 if it<Nt:
                     if it>=0:
                         d[it,ih] +=  m[itau,ip]                   
@@ -143,10 +148,6 @@ def ricker(dt,f0):
     b = n**2
     return (1-2*b)*np.exp(-b)
 
-import numpy as np
-# import src.radon_lib as rl
-# import src.seismic_lib as seismic
-import matplotlib.pyplot as plt
 
 Np = 55        # Curvatures
 Nt = 250
