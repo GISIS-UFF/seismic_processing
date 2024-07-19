@@ -537,6 +537,41 @@ def radon_cg(d,m0,Nt,dt,Nh,h,Np,p,href,Niter):
            
     return m
 
+def data(data : sgy.SegyFile, key : str, index : int) -> None:
+    '''
+    Plot a prestack seismic gather according to a specific header keyword.
+    
+    ### Parameters:        
+    
+    data: segyio object.
+
+    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    
+    index: integer that select a common gather.  
+
+    ### Examples:
+
+    >>> view.seismic(data, key = "src", index = 51)
+    >>> view.seismic(data, key = "rec", index = 203)
+    >>> view.seismic(data, key = "cmp", index = 315)
+    >>> view.seismic(data, key = "off", index = 223750)
+    '''    
+
+    __check_keyword(key)
+    __check_index(data, key, index)
+
+    byte, label = __keywords.get(key)
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+
+    seismic = data.trace.raw[:].T
+    seismic = seismic[:, traces]
+
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+    
+    return seismic, dt, nt
+
 def wigb(d,dt,h,xcur,color):
 
 # Plot wiggle seismic plot (python version of Xin-gong Li faumous wigb.m)
