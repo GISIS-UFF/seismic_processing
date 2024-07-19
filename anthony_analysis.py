@@ -17,34 +17,42 @@ input_file5 ="data/data_filt.sgy"
 
 input_file6 ="data/difference"
 
+input_file7 ="data/polandfilt"
 
 
-data = mng.import_sgy_file(input_file6)
 
+
+data = mng.import_sgy_file(input_file7)
+
+
+print(f'numero de traço {data.tracecount}')
 mng.show_trace_header(data)
 
-key = 'rec'
+
+key = 'cmp'
 
 indexes = view.keyword_indexes(data, key)
 
 print(indexes)
 
-index = 4
+index = 0
 view.gather(data, key, index)
 
 view.fourier_fx_domain(data, key, index, fmin = 0, fmax = 100)
 
 
-# fmin = 2    
-# fmax = 50
+fmin = 2    
+fmax = 50
 
-# output_file = f"data/overthrust_seismic_data_{fmin}-{fmax}Hz.sgy"
+output_file = f"data/overthrust_seismic_data_{fmin}-{fmax}Hz.sgy"
 
-# data_filt = filter.fourier_FX_domain(data, fmin, fmax, output_file)
+data_filt = filter.fourier_FX_domain(data, fmin, fmax, output_file)
  
 
-# view.fourier_fx_domain(data_filt, key, index, fmin = 0, fmax = 100)
+view.fourier_fx_domain(data_filt, key, index, fmin = 0, fmax = 100)
 
 # view.difference(data, data_filt, key, index)
 
 #mng.export_sgy_file(data_filt,'data_filt.sgy',)
+#traces_to_remove = [0, 2]
+#mng.extract_trace_gather(data,'polandfilt',traces_to_remove)
