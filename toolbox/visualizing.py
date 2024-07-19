@@ -440,101 +440,142 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
 
 def radon_tp_domain():
 # Jonatas CMP domain
-# """
-# Created on Mon Feb 16 12:00:56 2015
 
-# @author: msacchi
-# """
+    """
+    Created on Mon Feb 16 12:00:56 2015
 
-# from numba import jit
-# import numpy as np
+    @author: msacchi
+    """
 
-# @jit(nopython=True)
-# def radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
+from numba import jit
+import numpy as np
 
-# # Adjoint Time-domain Parabolic Radon Operator
+@jit(nopython=True)
+def radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
 
-# # d(nt,nh): data
-# # dt      : sampling interval
-# # h(Nh)   : offset
-# # p(Np)   : curvature of parabola
-# # href    : reference offset
-# # Returns m(nt,np) the Radon coefficients 
+# Adjoint Time-domain Parabolic Radon Operator
 
-# # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+# d(nt,nh): data
+# dt      : sampling interval
+# h(Nh)   : offset
+# p(Np)   : curvature of parabola
+# href    : reference offset
+# Returns m(nt,np) the Radon coefficients 
+
+# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
  
-#     m=np.zeros((Nt,Np))
+    m=np.zeros((Nt,Np))
 
-#     for itau in range(0,Nt):
-#         for ih in range(0,Nh):
-#             for ip in range(0,Np):
-#                 t = (itau)*dt + p[ip]*(h[ih]/href)**2
-#                 it = int(t/dt)
-#                 if it<Nt:
-#                     if it>0:
-#                         m[itau,ip] +=  d[it,ih]
+    for itau in range(0,Nt):
+        for ih in range(0,Nh):
+            for ip in range(0,Np):
+                t = (itau)*dt + p[ip]*(h[ih]/href)**2
+                it = int(t/dt)
+                if it<Nt:
+                    if it>0:
+                        m[itau,ip] +=  d[it,ih]
     
-#     return m
+    return m
         
 
-# def radon_forward(m,Nt,dt,Nh,h,Np,p,href):
+def radon_forward(m,Nt,dt,Nh,h,Np,p,href):
 
-# # Forward Time-domain Parabolic Radon Transform
+# Forward Time-domain Parabolic Radon Transform
 
-# # m(nt,nh): Radon coefficients 
-# # dt      : sampling interval
-# # h(Nh)   : offset
-# # p(Np)   : curvature of parabola
-# # href    : reference offset
-# # Returns d(nt,nh) the synthetized data from the Radon coefficients
+# m(nt,nh): Radon coefficients 
+# dt      : sampling interval
+# h(Nh)   : offset
+# p(Np)   : curvature of parabola
+# href    : reference offset
+# Returns d(nt,nh) the synthetized data from the Radon coefficients
 
-# # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
-#     d=np.zeros((Nt,Nh))
+    d=np.zeros((Nt,Nh))
       
-#     for itau in range(0,Nt):
-#         for ih in range(0,Nh):
-#             for ip in range(0,Np):
-#                 t = (itau)*dt+p[ip]*(h[ih]/href)**2
-#                 it=int(t/dt)
-#                 if it<Nt:
-#                     if it>=0:
-#                         d[it,ih] +=  m[itau,ip]                   
-#     return d
+    for itau in range(0,Nt):
+        for ih in range(0,Nh):
+            for ip in range(0,Np):
+                t = (itau)*dt+p[ip]*(h[ih]/href)**2
+                it=int(t/dt)
+                if it<Nt:
+                    if it>=0:
+                        d[it,ih] +=  m[itau,ip]                   
+    return d
     
 
-# def radon_cg(d,m0,Nt,dt,Nh,h,Np,p,href,Niter):
+def radon_cg(d,m0,Nt,dt,Nh,h,Np,p,href,Niter):
          
-# # LS Radon transform. Finds the Radon coefficients by minimizing
-# # ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
-# # The solution is found via CGLS with operators L and L^T applied on the
-# # flight
+# LS Radon transform. Finds the Radon coefficients by minimizing
+# ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
+# The solution is found via CGLS with operators L and L^T applied on the
+# flight
 
-# # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
-#     m = m0  
+    m = m0  
     
-#     s = d-radon_forward(m,Nt,dt,Nh,h,Np,p,href) # d - Lm
-#     pp = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # pp = L's 
-#     r = pp
-#     q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href)
-#     old = np.sum(np.sum(r*r))
-#     print("iter","  res")
+    s = d-radon_forward(m,Nt,dt,Nh,h,Np,p,href) # d - Lm
+    pp = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # pp = L's 
+    r = pp
+    q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href)
+    old = np.sum(np.sum(r*r))
+    print("iter","  res")
     
-#     for k in range(0,Niter):
-#          alpha = np.sum(np.sum(r*r))/np.sum(np.sum(q*q))
-#          m +=  alpha*pp
-#          s -=  alpha*q
-#          r = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # r= L's
-#          new = np.sum(np.sum(r*r))
-#          print(k, new)
-#          beta = new/old
-#          old = new
-#          pp = r + beta*pp
-#          q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href) # q=L pp
+    for k in range(0,Niter):
+         alpha = np.sum(np.sum(r*r))/np.sum(np.sum(q*q))
+         m +=  alpha*pp
+         s -=  alpha*q
+         r = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # r= L's
+         new = np.sum(np.sum(r*r))
+         print(k, new)
+         beta = new/old
+         old = new
+         pp = r + beta*pp
+         q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href) # q=L pp
            
-#     return m 
+    return m
+
+def wigb(d,dt,h,xcur,color):
+
+# Plot wiggle seismic plot (python version of Xin-gong Li faumous wigb.m)
+
+    [nt,nx] = np.shape(d)
+    dmax = np.max(d)
+    d = d/dmax
+    t = np.linspace(0,(nt-1)*dt,nt)
+    tmax = np.amax(t)
+    hmin = np.amin(h)
+    hmax = np.amax(h)
+   
+    c = xcur*np.mean(np.diff(h))
+
+    plt.axis([hmin-2*c, hmax+2*c, tmax, 0.])
+    d[nt-1,:]=0
+    d[0,:]=0
+    for k in range(0,nx):
+        s =d[:,k]*c
+        plt.plot(s+h[k], t, color,linewidth=1)
+        b = h[k]+s.clip(min=0) 
+        plt.fill(b,t,color)
+
+    return
+    
+def ricker(dt,f0):    
+         
+#Ricker wavelet of central frequency f0 sampled every dt seconds
+
+# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+
+    nw = 2.5/f0/dt
+    nw = 2*int(nw/2)
+    nc = int(nw/2)
+    a = f0*dt*3.14159265359
+    n = a*np.arange(-nc,nc)
+    b = n**2
+    return (1-2*b)*np.exp(-b)
+ 
 
     pass         
 
