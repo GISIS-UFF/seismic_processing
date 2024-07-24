@@ -6,7 +6,7 @@ def import_sgy_file(filename: str) -> sgy.SegyFile:
     try:
         return sgy.open(filename, ignore_geometry=True, mode="r+")
     except FileNotFoundError:
-        print("File does not exist. Please verify the file path.")
+        print(f"File {filename} does not exist. Please verify the file path.")
         exit()
 
 def export_sgy_file(data : sgy.SegyFile, filename : str) -> None:
@@ -25,7 +25,7 @@ def export_sgy_file(data : sgy.SegyFile, filename : str) -> None:
         for i in range(data.tracecount):
             f.trace[i] = data.trace[i]
         
-        
+        # Why are there two for loops here? (computationally expensive)
         f.bin = data.bin
         
        
@@ -52,7 +52,7 @@ def show_trace_header(data : sgy.SegyFile) -> None:
         last = data.attributes(v)[data.tracecount-1][0]
         print(f"{k:>40s} {str(v):^6s} {str(first):^11s} {str(last):^11s}")
 
-def extract_trace_gather(data : sgy.SegyFile,filename : str,removetrace: list):
+def extract_trace_gather(data : sgy.SegyFile, filename : str, removetrace: list):
     dt = data.attributes(117)[0][0] 
     t=data.tracecount - len(removetrace)
     # Criar um novo arquivo SEG-Y

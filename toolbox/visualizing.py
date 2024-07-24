@@ -1,7 +1,6 @@
 import numpy as np
 import segyio as sgy
 import matplotlib.pyplot as plt
-from toolbox import managing as mng
 
 __keywords = {'src' : [9,  'shot'], 
               'rec' : [13, 'receiver'], 
@@ -46,10 +45,10 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
 
     return np.unique(data.attributes(byte))
 
-def gather(data : sgy.SegyFile, key : str, index : int) -> None:
+def gather(data : sgy.SegyFile, **kwargs) -> None:
     '''
     Plot a prestack seismic gather according to a specific header keyword.
-    
+
     ### Parameters:        
     
     data: segyio object.
@@ -58,6 +57,10 @@ def gather(data : sgy.SegyFile, key : str, index : int) -> None:
     
     index: integer that select a common gather.  
 
+    ### Hint:
+
+    If no keys or indexes provided, it will be plot the first shot gather.  
+        
     ### Examples:
 
     >>> view.seismic(data, key = "src", index = 51)
@@ -65,6 +68,9 @@ def gather(data : sgy.SegyFile, key : str, index : int) -> None:
     >>> view.seismic(data, key = "cmp", index = 315)
     >>> view.seismic(data, key = "off", index = 223750)
     '''    
+
+    key = kwargs.get("key") if "key" in kwargs else "src"
+    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(data, key)[0] 
 
     __check_keyword(key)
     __check_index(data, key, index)
@@ -79,7 +85,7 @@ def gather(data : sgy.SegyFile, key : str, index : int) -> None:
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
 
-    scale = 0.9*np.std(seismic)
+    scale = 0.8*np.std(seismic)
 
     fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 1, nrows = 1, figsize = (10, 5))
 
@@ -106,7 +112,7 @@ def gather(data : sgy.SegyFile, key : str, index : int) -> None:
     fig.tight_layout()
     plt.show()
 
-def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
+def geometry(data : sgy.SegyFile, **kwargs) -> None:
     '''
     Plot geometry, traces per cmp and the current source-receiver configuration 
     according to a specific header keyword.
@@ -119,6 +125,10 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     
     index: integer that select a common gather.  
 
+    ### Hint:
+
+    If no keys or indexes provided, it will be plot the first shot gather.  
+
     ### Examples:
 
     >>> view.geometry(data, key = "src", index = 51)
@@ -127,6 +137,9 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     >>> view.geometry(data, key = "off", index = 223750)
     '''    
 
+    key = kwargs.get("key") if "key" in kwargs else "src"
+    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(data, key)[0] 
+
     __check_keyword(key)
     __check_index(data, key, index)
 
@@ -134,49 +147,28 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
-    sx_complete = data.attributes(73)[:] 
-    sy_complete = data.attributes(77)[:]     
+    sx_complete = data.attributes(73)[:]  
+    sy_complete = data.attributes(77)[:]    
 
-    rx_complete = data.attributes(81)[:] 
-    ry_complete = data.attributes(85)[:]     
-
-    # _, cmp_index, cmp_count = np.unique(data.attributes(25)[:], return_index = True, return_counts = True)          
+    rx_complete = data.attributes(81)[:]
+    ry_complete = data.attributes(85)[:]    
 
     cmpx = data.attributes(181)[:] 
     cmpy = data.attributes(185)[:] 
-
-    xmin = min(np.min(sx_complete), np.min(rx_complete)) - 100
-    xmax = max(np.max(sx_complete), np.max(rx_complete)) + 150
-
-    ymin = min(np.min(sy_complete), np.min(ry_complete)) - 100
-    ymax = max(np.max(sy_complete), np.max(ry_complete)) + 100
-
-    xloc = np.linspace(xmin, xmax, 5)
-    yloc = np.linspace(ymin, ymax, 5)
-
-    xlab = np.array(xloc, dtype = int)
-    ylab = np.array(yloc, dtype = int)
 
     fig, ax = plt.subplots(num = f"Common {label} gather geometry", ncols = 3, nrows = 1, figsize = (15, 5))
 
     def set_config(p):
         ax[p].set_xlabel("X [m]", fontsize = 15)
         ax[p].set_ylabel("y [m]", fontsize = 15)
-        # ax[p].set_xticks(xloc)
-        # ax[p].set_yticks(yloc)
-        # ax[p].set_xticklabels(xlab)
-        # ax[p].set_yticklabels(ylab)
-        # ax[p].set_xlim([xmin, xmax])
-        # ax[p].set_ylim([ymin, ymax])
+        ax[p].legend(loc = "lower left")
 
-    ax[0].plot(rx_complete, ry_complete, "v", label="Receivers")
-    ax[0].plot(sx_complete, sy_complete, "*", label="Sources")
+    ax[0].plot(rx_complete, ry_complete, "v", label = "Receivers")
+    ax[0].plot(sx_complete, sy_complete, "*", label = "Sources")
     ax[0].set_title("Complete geometry", fontsize = 15)
     set_config(0)
 
-    ax[1].plot(cmpx, cmpy, ".", label="CMP")
-    # cbar = fig.colorbar(im, ax = ax[1])
-    # cbar.set_label("Traces per CMP", fontsize = 15, loc = "center")
+    ax[1].plot(cmpx, cmpy, ".", label = "CMP")
     ax[1].set_title("Coverage", fontsize = 15)
     set_config(1)
 
@@ -185,68 +177,10 @@ def geometry(data : sgy.SegyFile, key : str, index : int) -> None:
     ax[2].set_title("Local geometry", fontsize = 15)
     set_config(2)
 
-    for i in range(len(ax)):
-        ax[i].legend(loc="lower left")
-
     fig.tight_layout()
     plt.show()
 
-    # sx = data.attributes(73)[traces] / data.attributes(71)[traces]
-    # sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
-    # sz = data.attributes(45)[traces] / data.attributes(71)[traces]
-
-    # rx = data.attributes(81)[traces] / data.attributes(69)[traces]
-    # ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
-    # rz = data.attributes(41)[traces] / data.attributes(69)[traces]
-   
-    # print(cmp_trace, traces_per_cmp)
-
-    # plot_data = {
-    #     "cmp": (cmpx, cmpy, 'ob'),
-    #     "receiver": (rx, ry, 'oy'),
-    #     "shot": (sx, sy, 'og')
-    # }
-
-    # plot_title = {
-    #     "src": f"Common Shot Gather number {index}",
-    #     "cmp": f"Common Mid Point Gather number {index}",
-    #     "off": f"Common Offset Gather number {index}"
-    # }
-
-    # plot_order = {
-    #     "src": ["cmp", "receiver", "shot"],
-    #     "cmp": ["shot", "receiver", "cmp"],
-    #     "off": ["receiver", "shot", "cmp"]
-    # }
-    
-    # fig, ax = plt.subplots(num = f"Common {label} gather", nrows = 3, ncols = 1, figsize = (10, 5))
-
-    # ax[2].scatter(sx, sy, c = sz, cmap = "viridis", label="Sources")
-    # ax[2].set_title("Geometry", fontsize=15)
-    # im2 = ax[2].scatter(rx, ry, c = rz, cmap = "viridis", label="Receivers")
-    # ax[2].cbar = fig.colorbar(im2, ax = ax[2])
-    # ax[2].cbar.set_label("Receiver Depth", fontsize = 15) # não consegui entender como funciona esse "c = arg"
-        
-    # ax[1].scatter(cmpx, cmpy, label="CMP per Trace")
-
-
-    # if key in plot_order:
-    #     for element in plot_order[key]:
-    #         ax[0].plot(*plot_data[element], label=element)
-    #         ax[0].set_title(plot_title[key], fontsize=15)
-
-    # for i in range(len(ax)):
-    #     ax[i].set_xlabel("Distance [m]", fontsize=12)
-    #     ax[i].legend(loc="lower left")
-    #     ax[i].set_xticks(np.linspace(rx.min(), rx.max(), 11, dtype=int))
-    #     ax[i].set_xticklabels(np.array(np.linspace(0, 15000, 11, dtype=int))) # Como que eu consigo achar esse 15k de forma legit(?)
-
-    # fig.tight_layout()
-    # plt.gca().invert_yaxis()
-
-    # plt.show()
-
-def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
+def fourier_fx_domain(data : sgy.SegyFile, fmin : float, fmax = float, **kwargs) -> None:
     '''
     Plot the amplitude spectra of each trace in gather according to a specific header keyword.
     
@@ -261,6 +195,10 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     fmin: minimum frequency to visualize    
     
     fmin: maximum frequency to visualize    
+
+    ### Hint:
+
+    If no keys or indexes provided, it will be plot the first shot gather.  
     
     ### Examples:
 
@@ -269,7 +207,10 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     >>> view.fourier_fx_domain(data, key = "cmp", index = 315, fmin = 0, fmax = 100)
     >>> view.fourier_fx_domain(data, key = "off", index = 223750, fmin = 0, fmax = 100)
     '''    
-    
+
+    key = kwargs.get("key") if "key" in kwargs else "src"
+    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(data, key)[0] 
+
     __check_keyword(key)
     __check_index(data, key, index)
 
@@ -333,7 +274,7 @@ def fourier_fx_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     fig.tight_layout()
     plt.show()
 
-def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float, fmax = float) -> None:
+def fourier_fk_domain(data : sgy.SegyFile, fmin : float, fmax = float, **kwargs) -> None:
     '''
     Plot the amplitude spectra of each trace in gather according to a specific header keyword.
     
@@ -348,15 +289,22 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     fmin: minimum frequency to visualize    
     
     fmin: maximum frequency to visualize    
+
+    ### Hint:
+
+    If no keys or indexes provided, it will be plot the first shot gather.  
     
     ### Examples:
 
-    >>> view.fourier_fk_domain(data, key = "src", index = 51, fmin = 0, fmax = 100)
-    >>> view.fourier_fk_domain(data, key = "rec", index = 203, fmin = 0, fmax = 100)
-    >>> view.fourier_fk_domain(data, key = "cmp", index = 315, fmin = 0, fmax = 100)
-    >>> view.fourier_fk_domain(data, key = "off", index = 223750, fmin = 0, fmax = 100)
+    >>> view.fourier_fk_domain(data, fmin = 0, fmax = 100, key = "src", index = 51)
+    >>> view.fourier_fk_domain(data, fmin = 0, fmax = 100, key = "rec", index = 203)
+    >>> view.fourier_fk_domain(data, fmin = 0, fmax = 100, key = "cmp", index = 315)
+    >>> view.fourier_fk_domain(data, fmin = 0, fmax = 100, key = "off", index = 223750)
     '''    
-    
+
+    key = kwargs.get("key") if "key" in kwargs else "src"
+    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(data, key)[0] 
+
     __check_keyword(key)
     __check_index(data, key, index)
 
@@ -439,261 +387,180 @@ def fourier_fk_domain(data : sgy.SegyFile, key : str, index : int, fmin : float,
     plt.show()
 
 def radon_tp_domain():
-# Jonatas CMP domain
+    # Jonatas CMP domain
+    # You must to implement here in one function just two plots
+    # data | radon transform
 
-    """
-    Created on Mon Feb 16 12:00:56 2015
+    # from numba import jit
+    # import numpy as np
 
-    @author: msacchi
-    """
+    # @jit(nopython=True)
+    # def radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
 
-from numba import jit
-import numpy as np
+    # # Adjoint Time-domain Parabolic Radon Operator
 
-@jit(nopython=True)
-def radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
+    # # d(nt,nh): data
+    # # dt      : sampling interval
+    # # h(Nh)   : offset
+    # # p(Np)   : curvature of parabola
+    # # href    : reference offset
+    # # Returns m(nt,np) the Radon coefficients 
 
-# Adjoint Time-domain Parabolic Radon Operator
+    # # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
-# d(nt,nh): data
-# dt      : sampling interval
-# h(Nh)   : offset
-# p(Np)   : curvature of parabola
-# href    : reference offset
-# Returns m(nt,np) the Radon coefficients 
-
-# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
-
- 
-    m=np.zeros((Nt,Np))
-
-    for itau in range(0,Nt):
-        for ih in range(0,Nh):
-            for ip in range(0,Np):
-                t = (itau)*dt + p[ip]*(h[ih]/href)**2
-                it = int(t/dt)
-                if it<Nt:
-                    if it>0:
-                        m[itau,ip] +=  d[it,ih]
     
-    return m
+    #     m=np.zeros((Nt,Np))
+
+    #     for itau in range(0,Nt):
+    #         for ih in range(0,Nh):
+    #             for ip in range(0,Np):
+    #                 t = (itau)*dt + p[ip]*(h[ih]/href)**2
+    #                 it = int(t/dt)
+    #                 if it<Nt:
+    #                     if it>0:
+    #                         m[itau,ip] +=  d[it,ih]
+        
+    #     return m
+            
+
+    # def radon_forward(m,Nt,dt,Nh,h,Np,p,href):
+
+    # # Forward Time-domain Parabolic Radon Transform
+
+    # # m(nt,nh): Radon coefficients 
+    # # dt      : sampling interval
+    # # h(Nh)   : offset
+    # # p(Np)   : curvature of parabola
+    # # href    : reference offset
+    # # Returns d(nt,nh) the synthetized data from the Radon coefficients
+
+    # # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+
+    #     d=np.zeros((Nt,Nh))
+        
+    #     for itau in range(0,Nt):
+    #         for ih in range(0,Nh):
+    #             for ip in range(0,Np):
+    #                 t = (itau)*dt+p[ip]*(h[ih]/href)**2
+    #                 it=int(t/dt)
+    #                 if it<Nt:
+    #                     if it>=0:
+    #                         d[it,ih] +=  m[itau,ip]                   
+    #     return d
         
 
-def radon_forward(m,Nt,dt,Nh,h,Np,p,href):
+    # def radon_cg(d,m0,Nt,dt,Nh,h,Np,p,href,Niter):
+            
+    # # LS Radon transform. Finds the Radon coefficients by minimizing
+    # # ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
+    # # The solution is found via CGLS with operators L and L^T applied on the
+    # # flight
 
-# Forward Time-domain Parabolic Radon Transform
+    # # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
-# m(nt,nh): Radon coefficients 
-# dt      : sampling interval
-# h(Nh)   : offset
-# p(Np)   : curvature of parabola
-# href    : reference offset
-# Returns d(nt,nh) the synthetized data from the Radon coefficients
-
-# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
-
-    d=np.zeros((Nt,Nh))
-      
-    for itau in range(0,Nt):
-        for ih in range(0,Nh):
-            for ip in range(0,Np):
-                t = (itau)*dt+p[ip]*(h[ih]/href)**2
-                it=int(t/dt)
-                if it<Nt:
-                    if it>=0:
-                        d[it,ih] +=  m[itau,ip]                   
-    return d
-    
-
-def radon_cg(d,m0,Nt,dt,Nh,h,Np,p,href,Niter):
-         
-# LS Radon transform. Finds the Radon coefficients by minimizing
-# ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
-# The solution is found via CGLS with operators L and L^T applied on the
-# flight
-
-# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
-
-    m = m0  
-    
-    s = d-radon_forward(m,Nt,dt,Nh,h,Np,p,href) # d - Lm
-    pp = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # pp = L's 
-    r = pp
-    q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href)
-    old = np.sum(np.sum(r*r))
-    print("iter","  res")
-    
-    for k in range(0,Niter):
-         alpha = np.sum(np.sum(r*r))/np.sum(np.sum(q*q))
-         m +=  alpha*pp
-         s -=  alpha*q
-         r = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # r= L's
-         new = np.sum(np.sum(r*r))
-         print(k, new)
-         beta = new/old
-         old = new
-         pp = r + beta*pp
-         q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href) # q=L pp
-           
-    return m
-
-def data(data : sgy.SegyFile, key : str, index : int) -> None:
-    '''
-    Plot a prestack seismic gather according to a specific header keyword.
-    
-    ### Parameters:        
-    
-    data: segyio object.
-
-    key: header keyword options -> ["src", "rec", "off", "cmp"]
-    
-    index: integer that select a common gather.  
-
-    ### Examples:
-
-    >>> view.seismic(data, key = "src", index = 51)
-    >>> view.seismic(data, key = "rec", index = 203)
-    >>> view.seismic(data, key = "cmp", index = 315)
-    >>> view.seismic(data, key = "off", index = 223750)
-    '''    
-
-    __check_keyword(key)
-    __check_index(data, key, index)
-
-    byte, label = __keywords.get(key)
-
-    traces = np.where(data.attributes(byte)[:] == index)[0]
-
-    seismic = data.trace.raw[:].T
-    seismic = seismic[:, traces]
-
-    nt = data.attributes(115)[0][0]
-    dt = data.attributes(117)[0][0] * 1e-6
-    
-    return seismic, dt, nt
-
-def wigb(d,dt,h,xcur,color):
-
-# Plot wiggle seismic plot (python version of Xin-gong Li faumous wigb.m)
-
-    [nt,nx] = np.shape(d)
-    dmax = np.max(d)
-    d = d/dmax
-    t = np.linspace(0,(nt-1)*dt,nt)
-    tmax = np.amax(t)
-    hmin = np.amin(h)
-    hmax = np.amax(h)
-   
-    c = xcur*np.mean(np.diff(h))
-
-    plt.axis([hmin-2*c, hmax+2*c, tmax, 0.])
-    d[nt-1,:]=0
-    d[0,:]=0
-    for k in range(0,nx):
-        s =d[:,k]*c
-        plt.plot(s+h[k], t, color,linewidth=1)
-        b = h[k]+s.clip(min=0) 
-        plt.fill(b,t,color)
-
-    return
-    
-def ricker(dt,f0):    
-         
-#Ricker wavelet of central frequency f0 sampled every dt seconds
-
-# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
-
-    nw = 2.5/f0/dt
-    nw = 2*int(nw/2)
-    nc = int(nw/2)
-    a = f0*dt*3.14159265359
-    n = a*np.arange(-nc,nc)
-    b = n**2
-    return (1-2*b)*np.exp(-b)
- 
-
-    pass         
+    #     m = m0  
+        
+    #     s = d-radon_forward(m,Nt,dt,Nh,h,Np,p,href) # d - Lm
+    #     pp = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # pp = L's 
+    #     r = pp
+    #     q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href)
+    #     old = np.sum(np.sum(r*r))
+    #     print("iter","  res")
+        
+    #     for k in range(0,Niter):
+    #          alpha = np.sum(np.sum(r*r))/np.sum(np.sum(q*q))
+    #          m +=  alpha*pp
+    #          s -=  alpha*q
+    #          r = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # r= L's
+    #          new = np.sum(np.sum(r*r))
+    #          print(k, new)
+    #          beta = new/old
+    #          old = new
+    #          pp = r + beta*pp
+    #          q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href) # q=L pp
+            
+    #     return m
+    pass
 
 def semblance():
-# Amanda CMP domain
+    # Amanda CMP domain
 
-# nt = 5001
-# dt = 1e-3
+    # nt = 5001
+    # dt = 1e-3
 
-# nx = 161
-# dx = 25.0
+    # nx = 161
+    # dx = 25.0
 
-# vi = 1000
-# vf = 3000
-# dv = 50
+    # vi = 1000
+    # vf = 3000
+    # dv = 50
 
-# filename = f"cmp_gather_{nt}x{nx}_{dt*1e6:.0f}us.bin"
+    # filename = f"cmp_gather_{nt}x{nx}_{dt*1e6:.0f}us.bin"
 
-# seismic = np.fromfile(filename, dtype = np.float32, count = nt*nx)
-# seismic = np.reshape(seismic, [nt,nx], order = "F")
+    # seismic = np.fromfile(filename, dtype = np.float32, count = nt*nx)
+    # seismic = np.reshape(seismic, [nt,nx], order = "F")
 
-# vrms = np.arange(vi, vf + dv, dv)
-# offset = np.arange(nx, dtype = int)
+    # vrms = np.arange(vi, vf + dv, dv)
+    # offset = np.arange(nx, dtype = int)
 
-# time = np.arange(nt) * dt
+    # time = np.arange(nt) * dt
 
-# semblance = np.zeros((nt, len(vrms)))
+    # semblance = np.zeros((nt, len(vrms)))
 
-# for indt, t0 in enumerate(time):
-#     for indv, v in enumerate(vrms):
-    
-#         target = np.array(np.sqrt(t0**2 + (offset*dx/v)**2) / dt, dtype = int) 
+    # for indt, t0 in enumerate(time):
+    #     for indv, v in enumerate(vrms):
+        
+    #         target = np.array(np.sqrt(t0**2 + (offset*dx/v)**2) / dt, dtype = int) 
 
-#         mask = target < nt
-    
-#         t = target[mask]
-#         x = offset[mask]
-    
-#         semblance[indt, indv] = np.sum(np.abs(seismic[t,x]))**2    
+    #         mask = target < nt
+        
+    #         t = target[mask]
+    #         x = offset[mask]
+        
+    #         semblance[indt, indv] = np.sum(np.abs(seismic[t,x]))**2    
 
-# xloc = np.linspace(0, len(vrms)-1, 9)
-# xlab = np.linspace(vi, vf, 9)
+    # xloc = np.linspace(0, len(vrms)-1, 9)
+    # xlab = np.linspace(vi, vf, 9)
 
-# tloc = np.linspace(0, nt, 11)
-# tlab = np.around(np.linspace(0, nt-1, 11)*dt, decimals = 3)
+    # tloc = np.linspace(0, nt, 11)
+    # tlab = np.around(np.linspace(0, nt-1, 11)*dt, decimals = 3)
 
-# scale = 15.0*np.std(semblance)
+    # scale = 15.0*np.std(semblance)
 
-# fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10,8))
+    # fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10,8))
 
-# ax[0].imshow(seismic, aspect = "auto", cmap = "Greys")
-# ax[0].set_yticks(tloc)
-# ax[0].set_yticklabels(tlab)
+    # ax[0].imshow(seismic, aspect = "auto", cmap = "Greys")
+    # ax[0].set_yticks(tloc)
+    # ax[0].set_yticklabels(tlab)
 
-# ax[0].set_xticks(np.linspace(0,nx,5))
-# ax[0].set_xticklabels(np.linspace(0,nx-1,5, dtype = int)*dx)
+    # ax[0].set_xticks(np.linspace(0,nx,5))
+    # ax[0].set_xticklabels(np.linspace(0,nx-1,5, dtype = int)*dx)
 
-# ax[0].set_title("CMP Gather", fontsize = 18)
-# ax[0].set_xlabel("Offset [m]", fontsize = 15)
-# ax[0].set_ylabel("Two Way Time [s]", fontsize = 15)
+    # ax[0].set_title("CMP Gather", fontsize = 18)
+    # ax[0].set_xlabel("Offset [m]", fontsize = 15)
+    # ax[0].set_ylabel("Two Way Time [s]", fontsize = 15)
 
-# ax[1].imshow(semblance, aspect = "auto", cmap = "jet", vmin = -scale, vmax = scale)
+    # ax[1].imshow(semblance, aspect = "auto", cmap = "jet", vmin = -scale, vmax = scale)
 
-# ax[1].set_xticks(xloc)
-# ax[1].set_xticklabels(xlab*1e-3)
+    # ax[1].set_xticks(xloc)
+    # ax[1].set_xticklabels(xlab*1e-3)
 
-# ax[1].set_yticks(tloc)
-# ax[1].set_yticklabels(tlab)
+    # ax[1].set_yticks(tloc)
+    # ax[1].set_yticklabels(tlab)
 
-# ax[1].set_title("Semblance", fontsize = 18)
-# ax[1].set_xlabel("RMS Velocity [km/s]", fontsize = 15)
-# ax[1].set_ylabel("Two Way Time [s]", fontsize = 15)
+    # ax[1].set_title("Semblance", fontsize = 18)
+    # ax[1].set_xlabel("RMS Velocity [km/s]", fontsize = 15)
+    # ax[1].set_ylabel("Two Way Time [s]", fontsize = 15)
 
-# fig.tight_layout()
-# plt.grid()
-# plt.show()
+    # fig.tight_layout()
+    # plt.grid()
+    # plt.show()
 
     pass
 
-def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : int) -> None:
+def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
     '''
-    Documentation
-    Plot a prestack seismic , filtered seismic and difference of each trace in gather according to a specific header keyword
+    Plot a difference between prestack seismic gathers according to a specific header keyword
     
     ### Parameters:        
     
@@ -705,23 +572,27 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
     
     index: integer that select a common gather.  
 
+    ### Hint:
+
+    If no keys or indexes provided, it will be plot the first shot gather.  
+
     ### Examples:
 
     >>> view.difference(data,data_filt, key = "src", index = 51)
     >>> view.difference(data,data_filt, key = "rec", index = 203)
     >>> view.difference(data,data_filt, key = "cmp", index = 315)
     >>> view.difference(data,data_filt, key = "off", index = 223750)
-
-    
-    
     '''    
-    # Anthony
+
+    key = kwargs.get("key") if "key" in kwargs else "src"
+    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(input, key)[0] 
 
     __check_keyword(key)
 
     byte, label = __keywords.get(key)
 
     traces = np.where(input.attributes(byte)[:] == index)[0]
+    
     nt = input.attributes(115)[0][0]
     dt = input.attributes(117)[0][0] * 1e-6
 
@@ -736,10 +607,9 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
     scale = 0.99*np.std(seismic_input)
 
     fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 3, nrows = 1, figsize = (18, 5))
-    def set_config(p, title , fx,nt,dt):
-        
-        frequency = np.fft.fftfreq(nt, dt)
-        
+
+    def set_config(p, fx):
+                
         xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
         xlab = traces[xloc]
     
@@ -751,27 +621,20 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, key : str, index : i
         ax[p].set_xticks(xloc)
         ax[p].set_xticklabels(xlab)
         
-        ax[p].title.set_text(f'{title}')
         ax[p].set_xlabel('Trace number', fontsize = 15)
-        
         ax[p].set_ylabel('Time [s]', fontsize = 15)
-        
-        ax[1].cbar = fig.colorbar(fx, ax = ax[p])
-        
-        ax[1].cbar.set_label("Amplitude", fontsize = 15) 
 
+        ax[p].cbar = fig.colorbar(fx, ax = ax[p])
+        ax[p].cbar.set_label("Amplitude", fontsize = 15) 
 
-    fx =ax[0].imshow(seismic_input, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
-    set_config(0,'seismic_input',fx,nt,dt)
+    fx = ax[0].imshow(seismic_input, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    set_config(0, fx)
 
-    fx1=ax[1].imshow(seismic_output, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
-    set_config(1,'seismic_output',fx1,nt,dt)
+    fx = ax[1].imshow(seismic_output, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    set_config(1, fx)
 
-    fx2=ax[2].imshow(seismic_diff, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
-    set_config(2,'seismic_diff',fx2,nt,dt)
-    # define axis values according with key
-    # define labels according with key
-    # define colorbar correctly
+    fx = ax[2].imshow(seismic_diff, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    set_config(2, fx)
         
     fig.tight_layout()
     plt.show()
