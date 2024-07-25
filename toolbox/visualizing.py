@@ -30,6 +30,7 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
+    tlag = kwargs.get("tlag") if "tlag" in kwargs else 0.0
     index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
@@ -54,8 +55,8 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
     xlab = traces[xloc]
 
-    tloc = np.linspace(0, nt, 11, dtype = int)
-    tlab = np.around(tloc * dt, decimals = 1)
+    tloc = np.linspace(0, nt-1, 11, dtype = int)
+    tlab = np.around(tloc * dt + tlag, decimals = 3)
     
     ax.set_xticks(xloc)
     ax.set_xticklabels(xlab)
@@ -373,6 +374,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
+    tlag = kwargs.get("tlag") if "tlag" in kwargs else 0.0
     index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(input, key)[0] 
 
     mng.__check_keyword(key)
@@ -402,7 +404,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
         xlab = traces[xloc]
     
         tloc = np.linspace(0, nt-1, 11, dtype = int)
-        tlab = np.around(tloc*dt, decimals = 1)
+        tlab = np.around(tloc*dt + tlag, decimals = 3)
         
         ax[p].set_yticks(tloc)
         ax[p].set_yticklabels(tlab)

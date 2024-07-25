@@ -186,9 +186,12 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs):
         picking = np.where(data.attributes(byte)[:] == indexes[i])[0]  
 
         for k in range(nTraces):
+
             for w in header_values:    
                 output.header[i*nTraces + k][w] = data.attributes(w)[picking[k]][0] 
-                      
+
+            output.header[i*nTraces + k][sgy.TraceField.TRACE_SAMPLE_COUNT] = nTimes
+
     return output
 
 def mute_traces(data : sgy.SegyFile, output_name : str, trace_list : list):

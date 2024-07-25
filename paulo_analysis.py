@@ -8,7 +8,9 @@ data = mng.import_sgy_file(input_file)
 
 mng.show_trace_header(data)
 
-data_wind = mng.gather_windowing(data, "test_wind.sgy", key = "src", index_beg = 231, index_end = 231)
+data_wind = mng.gather_windowing(data, "test_wind.sgy", 
+                                 key = "src", index_beg = 231, index_end = 231,
+                                 time_beg = 0.1, time_end = 0.5)
 
 mng.show_trace_header(data_wind)
 
@@ -16,7 +18,7 @@ data_mute = mng.mute_traces(data_wind, "test_mute.sgy", [1,2])
 
 view.difference(data_wind, data_mute)
 
-view.gather(data_mute)
+view.gather(data_mute, tlag = 0.1)
 view.geometry(data_mute)
 view.fourier_fx_domain(data_mute, fmin = 0, fmax = 100)
 view.fourier_fk_domain(data_mute, fmin = 0, fmax = 100)
