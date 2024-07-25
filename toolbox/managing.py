@@ -75,14 +75,14 @@ def export_sgy_file(data : sgy.SegyFile, output_name : str) -> None:
         
         for i in range(data.tracecount):
             f.trace[i] = data.trace[i]
+            f.header[i] = data.header[i]
+            f.header[i][sgy.TraceField.TRACE_SAMPLE_INTERVAL] = dt
         
-        # Why are there two for loops here? (computationally expensive)
         f.bin = data.bin
         
        
-        for i in range(data.tracecount):
-            f.header[i] = data.header[i]
-            f.header[i][sgy.TraceField.TRACE_SAMPLE_INTERVAL] = dt
+        
+            
 
 def show_binary_header(data : sgy.SegyFile) -> None:
 
