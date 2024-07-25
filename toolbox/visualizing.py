@@ -2,48 +2,7 @@ import numpy as np
 import segyio as sgy
 import matplotlib.pyplot as plt
 
-__keywords = {'src' : [9,  'shot'], 
-              'rec' : [13, 'receiver'], 
-              'off' : [37, 'offset'], 
-              'cmp' : [21, 'mid point']}
-
-def __check_keyword(key : str) -> None:
-    
-    if key not in __keywords.keys():
-        print("\033[31mInvalid keyword!\033[m\
-                     \nPlease use a valid header keyword: ['src', 'rec', 'off', 'cmp']")
-        exit()
-
-def __check_index(data : sgy.SegyFile, key : str, index : int ) -> None:   
-    
-    if index not in keyword_indexes(data, key):
-        print("\033[31mInvalid index choice!\033[m\
-                     \nPlease use the function \033[33mview.keyword_indexes\033[m to choose a properly index.")
-        exit()
-
-def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
-    '''
-    Print possible indexes to access in seismic gather.
-    
-    ### Parameters:        
-    
-    data: segyio object.
-
-    key: header keyword options -> ["src", "rec", "off", "cmp"]
-    
-    ### Examples:
-    
-    >>> keyword_indexes(data, key = "src")
-    >>> keyword_indexes(data, key = "rec")
-    >>> keyword_indexes(data, key = "cmp")
-    >>> keyword_indexes(data, key = "off")
-    '''    
-
-    __check_keyword(key)
-
-    byte = __keywords.get(key)[0]
-
-    return np.unique(data.attributes(byte))
+from toolbox import managing as mng
 
 def gather(data : sgy.SegyFile, **kwargs) -> None:
     '''
@@ -63,19 +22,20 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
         
     ### Examples:
 
-    >>> view.seismic(data, key = "src", index = 51)
-    >>> view.seismic(data, key = "rec", index = 203)
-    >>> view.seismic(data, key = "cmp", index = 315)
-    >>> view.seismic(data, key = "off", index = 223750)
+    >>> view.gather(data)
+    >>> view.gather(data, key = "src", index = 51)
+    >>> view.gather(data, key = "rec", index = 203)
+    >>> view.gather(data, key = "cmp", index = 315)
+    >>> view.gather(data, key = "off", index = 223750)
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(data, key)[0] 
+    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
-    __check_keyword(key)
-    __check_index(data, key, index)
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
 
-    byte, label = __keywords.get(key)
+    byte, label = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
@@ -138,12 +98,12 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(data, key)[0] 
+    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
-    __check_keyword(key)
-    __check_index(data, key, index)
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
 
-    byte, label = __keywords.get(key)
+    byte, label = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
@@ -209,12 +169,12 @@ def fourier_fx_domain(data : sgy.SegyFile, fmin : float, fmax = float, **kwargs)
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(data, key)[0] 
+    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
-    __check_keyword(key)
-    __check_index(data, key, index)
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
 
-    byte, label = __keywords.get(key)
+    byte, label = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]    
     
@@ -303,12 +263,12 @@ def fourier_fk_domain(data : sgy.SegyFile, fmin : float, fmax = float, **kwargs)
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(data, key)[0] 
+    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
-    __check_keyword(key)
-    __check_index(data, key, index)
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
 
-    byte, label = __keywords.get(key)
+    byte, label = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
@@ -413,11 +373,11 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else keyword_indexes(input, key)[0] 
+    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(input, key)[0] 
 
-    __check_keyword(key)
+    mng.__check_keyword(key)
 
-    byte, label = __keywords.get(key)
+    byte, label = mng.__keywords.get(key)
 
     traces = np.where(input.attributes(byte)[:] == index)[0]
     
@@ -432,7 +392,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
 
     seismic_diff = seismic_output - seismic_input
 
-    scale = 0.99*np.std(seismic_input)
+    scale = 0.9*np.std(seismic_output)
 
     fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 3, nrows = 1, figsize = (18, 5))
 
