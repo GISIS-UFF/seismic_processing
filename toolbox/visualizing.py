@@ -141,7 +141,7 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
     fig.tight_layout()
     plt.show()
 
-def fourier_fx_domain(data : sgy.SegyFile, fmin : float, fmax = float, **kwargs) -> None:
+def fourier_fx_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -> None:
     '''
     Plot the amplitude spectra of each trace in gather according to a specific header keyword.
     
@@ -235,7 +235,7 @@ def fourier_fx_domain(data : sgy.SegyFile, fmin : float, fmax = float, **kwargs)
     fig.tight_layout()
     plt.show()
 
-def fourier_fk_domain(data : sgy.SegyFile, fmin : float, fmax = float, **kwargs) -> None:
+def fourier_fk_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -> None:
     '''
     Plot the amplitude spectra of each trace in gather according to a specific header keyword.
     

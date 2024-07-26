@@ -16,8 +16,8 @@ def __check_keyword(key : str) -> None:
 def __check_index(data : sgy.SegyFile, key : str, index : int ) -> None:   
     
     if index not in keyword_indexes(data, key):
-        print("\033[31mInvalid index choice!\033[m\
-                     \nPlease use the function \033[33mview.keyword_indexes\033[m to choose a properly index.")
+        print("\033[31mInvalid index!\033[m\
+                     \nPlease use the function \033[33mmng.keyword_indexes\033[m to choose a properly index.")
         exit()
 
 def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
@@ -149,7 +149,7 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs):
             print("Error: incorrect time for slicing!")
             
     index_beg = kwargs.get("index_beg") if "index_beg" in kwargs else indexes[0]    
-    index_end = kwargs.get("index_beg") if "index_beg" in kwargs else indexes[-1]   
+    index_end = kwargs.get("index_end") if "index_end" in kwargs else indexes[-1]   
 
     __check_index(data, key, index_beg)
     __check_index(data, key, index_end)
@@ -184,9 +184,8 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs):
     for i in range(limit_beg, limit_end + 1):
         
         picking = np.where(data.attributes(byte)[:] == indexes[i])[0]  
-
+        
         for k in range(nTraces):
-
             for w in header_values:    
                 output.header[i*nTraces + k][w] = data.attributes(w)[picking[k]][0] 
 
