@@ -1,10 +1,23 @@
 import numpy as np
 import segyio as sgy
 
-__keywords = {'src' : [9,  'shot'], 
-              'rec' : [13, 'receiver'], 
-              'off' : [37, 'offset'], 
-              'cmp' : [21, 'mid point']}
+__keywords = {'tsl'  : 1,   # trace sequence line
+              'tsf'  : 5,   # trace sequence file     
+              'src'  : 9,   # shot id 
+              'rec'  : 13,  # receiver id 
+              'cmp'  : 21,  # mid point point id
+              'off'  : 37,  # offset id 
+              'zrec' : 41,  # receiver elevation
+              'zsrc' : 45,  # source elevation
+              'gscal': 69,  # geometry scalar
+              'xsrc' : 73,  # source x
+              'ysrc' : 77,  # source y
+              'xrec' : 81,  # receiver x
+              'yrec' : 85,  # receiver y
+              'nt'   : 115, # time samples 
+              'dt'   : 117, # time spacing 
+              'xcmp' : 181, # mid point x
+              'ycmp' : 185} # mid point y
 
 def __check_keyword(key : str) -> None:
     
@@ -30,6 +43,10 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
 
     key: header keyword options -> ["src", "rec", "off", "cmp"]
     
+    ### Returns:
+
+    An array with all possible indexes for indicated keyword.     
+
     ### Examples:
     
     >>> keyword_indexes(data, key = "src")
@@ -40,7 +57,7 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
 
     __check_keyword(key)
 
-    byte = __keywords.get(key)[0]
+    byte = __keywords.get(key)
 
     return np.unique(data.attributes(byte))
 
@@ -51,59 +68,30 @@ def import_sgy_file(input_name: str) -> sgy.SegyFile:
     ### Parameters:        
     
     input_name: file path.
+    
+    ### Returns:
+
+    A segy file object.
     '''
 
     try:
-        return sgy.open(input_name, ignore_geometry=True, mode="r+")
+        return sgy.open(input_name, ignore_geometry = True, mode = "r+")
     except FileNotFoundError:
         print(f"File \033[31m{input_name}\033[m does not exist. Please verify the file path.")
         exit()
 
-def export_sgy_file(data : sgy.SegyFile, output_name : str) -> None:
-    
-    
-    dt = data.attributes(117)[0][0] 
-
-    # Criar um novo arquivo SEG-Y
-    spec = sgy.spec()
-    spec.samples = data.samples
-    spec.tracecount = data.tracecount
-    spec.format = data.format
-
-    
-    with sgy.create(output_name, spec) as f:
-        
-        for i in range(data.tracecount):
-            f.trace[i] = data.trace[i]
-            f.header[i] = data.header[i]
-            f.header[i][sgy.TraceField.TRACE_SAMPLE_INTERVAL] = dt
-        
-        f.bin = data.bin
-        
-       
-        
-            
-
-def show_binary_header(data : sgy.SegyFile) -> None:
-
-    binHeader = sgy.binfield.keys
-    print("\n Checking binary header \n")
-    print(f"{'key':>25s} {'byte':^6s} {'value':^7s} \n")
-    for k, v in binHeader.items():
-        if v in data.bin:
-            print(f"{k:>25s} {str(v):^6s} {str(data.bin[v]):^7s}")
-
 def show_trace_header(data : sgy.SegyFile) -> None:    
 
     traceHeader = sgy.tracefield.keys
-    print("\n Checking trace header \n")
     print(f"{'Trace header':>40s} {'byte':^6s} {'first':^11s} {'last':^11s} \n")
+    
     for k, v in traceHeader.items():
-        first = data.attributes(v)[0][0]
-        last = data.attributes(v)[data.tracecount-1][0]
-        print(f"{k:>40s} {str(v):^6s} {str(first):^11s} {str(last):^11s}")
+        if v in __keywords.values():    
+            first = data.attributes(v)[0][0]
+            last = data.attributes(v)[data.tracecount-1][0]
+            print(f"{k:>40s} {str(v):^6s} {str(first):^11s} {str(last):^11s}")
 
-def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs):
+def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs) -> sgy.SegyFile:
     '''
     Windowing data according with keywords and time slicing.
 
@@ -122,14 +110,9 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs):
     index_beg: initial index for specific keyword. 
     
     index_end: final index for specific keyword.
-
-    ### Hint:
-
-    If no keys or times provided, nothing going to happen.  
         
     ### Examples:
 
-    >>> mng.extract_gather_window(data, output_name)
     >>> mng.extract_gather_window(data, output_name, key = "src", time_beg = 0.1, time_end = 0.5)
     >>> mng.extract_gather_window(data, output_name, key = "src", index_beg = 231, index_end = 231)
     '''    
@@ -187,43 +170,25 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs):
         
         for k in range(nTraces):
             for w in header_values:    
-                output.header[i*nTraces + k][w] = data.attributes(w)[picking[k]][0] 
+                if w in __keywords.values():
+                    output.header[i*nTraces + k][w] = data.attributes(w)[picking[k]][0] 
 
             output.header[i*nTraces + k][sgy.TraceField.TRACE_SAMPLE_COUNT] = nTimes
+            output.header[i*nTraces + k][sgy.TraceField.TRACE_SAMPLE_INTERVAL] = dt
 
     return output
 
-def mute_traces(data : sgy.SegyFile, output_name : str, trace_list : list):
+def edit_trace_header(data : sgy.SegyFile, bytes : list, values : list[np.ndarray]):
     '''
-    Erase amplitude of traces selected according with the header keyword TRACE_SEQUENCE_LINE.
+    Instructions
 
-    ### Parameters:        
-    
-    data: segyio object.
 
-    trace_list: traces to be muted. 
-        
-    ### Examples:
+    '''
 
-    >>> mng.mute_traces(data, trace_list)
-    '''    
+    if len(bytes) != len(values):
+        print("Error message")
 
-    seismic = data.trace.raw[:].T
-    
-    traces = np.array(trace_list) - 1
-    
-    seismic[:, traces] = 1e-6
-
-    sgy.tools.from_array2D(output_name, seismic.T)
-    
-    output = sgy.open(output_name, "r+", ignore_geometry = True)
-    output.header = data.header
-
-    return output
-
-def edit_header_attribute(data : sgy.SegyFile, keyword : int, attribute : np.ndarray) -> sgy.SegyFile:
-    # Davi
-    # bora ver se vai dar tempo para fazer na sexta feira depois do campo do Francisco
-    current_data_header = np.where(data.attributes(keyword)[:] == attribute)[0]
-    pass
-
+    for i in range(data.tracecount):
+        for k, byte in enumerate(bytes):
+            if byte in __keywords.values():
+                data.header[i][byte] = values[k][i]

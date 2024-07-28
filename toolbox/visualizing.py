@@ -15,28 +15,22 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     key: header keyword options -> ["src", "rec", "off", "cmp"]
     
     index: integer that select a common gather.  
-
-    ### Hint:
-
-    If no keys or indexes provided, it will be plot the first shot gather.  
         
     ### Examples:
 
-    >>> view.gather(data)
-    >>> view.gather(data, key = "src", index = 51)
-    >>> view.gather(data, key = "rec", index = 203)
-    >>> view.gather(data, key = "cmp", index = 315)
-    >>> view.gather(data, key = "off", index = 223750)
+    >>> view.gather(data)                           # plots first shot 
+    >>> view.gather(data, key = "off")              # plots first offset 
+    >>> view.gather(data, key = "rec", index = 789) # plots rec index 789
+    >>> view.gather(data, key = "cmp", index = 512) # plots cmp index 512
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    tlag = kwargs.get("tlag") if "tlag" in kwargs else 0.0
     index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
 
-    byte, label = mng.__keywords.get(key)
+    byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
@@ -48,7 +42,7 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
 
     scale = 0.8*np.std(seismic)
 
-    fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 1, nrows = 1, figsize = (10, 5))
+    fig, ax = plt.subplots(ncols = 1, nrows = 1, figsize = (10, 5))
 
     img = ax.imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
@@ -56,7 +50,7 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     xlab = traces[xloc]
 
     tloc = np.linspace(0, nt-1, 11, dtype = int)
-    tlab = np.around(tloc * dt + tlag, decimals = 3)
+    tlab = np.around(tloc * dt, decimals = 3)
     
     ax.set_xticks(xloc)
     ax.set_xticklabels(xlab)
@@ -75,8 +69,8 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
 
 def geometry(data : sgy.SegyFile, **kwargs) -> None:
     '''
-    Plot geometry, traces per cmp and the current source-receiver configuration 
-    according to a specific header keyword.
+    Plot geometry, cmp coodinates the current configuration according 
+    to a specific header keyword.
     
     ### Parameters:        
     
@@ -86,16 +80,12 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
     
     index: integer that select a common gather.  
 
-    ### Hint:
-
-    If no keys or indexes provided, it will be plot the first shot gather.  
-
     ### Examples:
 
-    >>> view.geometry(data, key = "src", index = 51)
-    >>> view.geometry(data, key = "rec", index = 203)
-    >>> view.geometry(data, key = "cmp", index = 315)
-    >>> view.geometry(data, key = "off", index = 223750)
+    >>> view.geometry(data)                           # plots first shot 
+    >>> view.geometry(data, key = "off")              # plots first offset
+    >>> view.geometry(data, key = "rec", index = 789) # plots rec index 789
+    >>> view.geometry(data, key = "cmp", index = 512) # plots cmp index 512
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
@@ -104,44 +94,52 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
 
-    byte, label = mng.__keywords.get(key)
+    byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
-    sx_complete = data.attributes(73)[:]  
-    sy_complete = data.attributes(77)[:]    
+    sx_complete = data.attributes(73)[:] / data.attributes(69)[:] 
+    sy_complete = data.attributes(77)[:] / data.attributes(69)[:]    
 
-    rx_complete = data.attributes(81)[:]
-    ry_complete = data.attributes(85)[:]    
+    rx_complete = data.attributes(81)[:] / data.attributes(69)[:]
+    ry_complete = data.attributes(85)[:] / data.attributes(69)[:]
 
-    cmpx = data.attributes(181)[:] 
-    cmpy = data.attributes(185)[:] 
+    cmpx = data.attributes(181)[:] / data.attributes(69)[:] 
+    cmpy = data.attributes(185)[:] / data.attributes(69)[:]
 
-    fig, ax = plt.subplots(num = f"Common {label} gather geometry", ncols = 3, nrows = 1, figsize = (15, 5))
+    xmin = min(np.min(sx_complete), np.min(rx_complete))
+    xmax = max(np.max(sx_complete), np.max(rx_complete))
+
+    ymin = min(np.min(sy_complete), np.min(ry_complete))
+    ymax = max(np.max(sy_complete), np.max(ry_complete))
+
+    fig, ax = plt.subplots(ncols = 3, nrows = 1, figsize = (15, 5))
 
     def set_config(p):
         ax[p].set_xlabel("X [m]", fontsize = 15)
         ax[p].set_ylabel("y [m]", fontsize = 15)
+        ax[p].set_xlim([xmin, xmax])
+        ax[p].set_ylim([ymin, ymax])
         ax[p].legend(loc = "lower left")
 
-    ax[0].plot(rx_complete, ry_complete, "v", label = "Receivers")
-    ax[0].plot(sx_complete, sy_complete, "*", label = "Sources")
+    ax[0].plot(rx_complete, ry_complete, ".", label = "Receivers")
+    ax[0].plot(sx_complete, sy_complete, ".", label = "Sources")
     ax[0].set_title("Complete geometry", fontsize = 15)
     set_config(0)
 
-    ax[1].plot(cmpx, cmpy, ".", label = "CMP")
+    ax[1].plot(cmpx, cmpy, label = "CMP")
     ax[1].set_title("Coverage", fontsize = 15)
     set_config(1)
 
-    ax[2].plot(rx_complete[traces], ry_complete[traces], "v", label="Receivers")
-    ax[2].plot(sx_complete[traces], sy_complete[traces], "*", label="Sources")
+    ax[2].plot(rx_complete[traces], ry_complete[traces], ".", label="Receivers")
+    ax[2].plot(sx_complete[traces], sy_complete[traces], ".", label="Sources")
     ax[2].set_title("Local geometry", fontsize = 15)
     set_config(2)
 
     fig.tight_layout()
     plt.show()
 
-def fourier_fx_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -> None:
+def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     '''
     Plot the amplitude spectra of each trace in gather according to a specific header keyword.
     
@@ -152,22 +150,18 @@ def fourier_fx_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -
     key: header keyword options -> ["src", "rec", "off", "cmp"]
     
     index: integer that select a common gather.  
-
-    fmin: minimum frequency to visualize    
     
-    fmin: maximum frequency to visualize    
-
-    ### Hint:
-
-    If no keys or indexes provided, it will be plot the first shot gather.  
+    fmax: maximum frequency to visualize.    
     
     ### Examples:
 
-    >>> view.fourier_fx_domain(data, key = "src", index = 51, fmin = 0, fmax = 100)
-    >>> view.fourier_fx_domain(data, key = "rec", index = 203, fmin = 0, fmax = 100)
-    >>> view.fourier_fx_domain(data, key = "cmp", index = 315, fmin = 0, fmax = 100)
-    >>> view.fourier_fx_domain(data, key = "off", index = 223750, fmin = 0, fmax = 100)
+    >>> view.fourier_fx_domain(data, fmax = 200)               # plots first shot             
+    >>> view.fourier_fx_domain(data, key = "off")              # plots first offset
+    >>> view.fourier_fx_domain(data, key = "rec", index = 789) # plots rec index 789  
+    >>> view.fourier_fx_domain(data, key = "cmp", index = 512) # plots cmp index 512
     '''    
+
+    fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
 
     key = kwargs.get("key") if "key" in kwargs else "src"
     index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
@@ -175,7 +169,7 @@ def fourier_fx_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
 
-    byte, label = mng.__keywords.get(key)
+    byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]    
     
@@ -191,9 +185,9 @@ def fourier_fx_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -
     for i in range(len(traces)):
         fx_seismic[:,i] *= 1.0 / np.max(fx_seismic[:,i]) 
 
-    scale = 0.9*np.std(seismic)
+    scale = 0.8*np.std(seismic)
 
-    mask = np.logical_and(frequency >= fmin, frequency <= fmax)
+    mask = np.logical_and(frequency >= 0.0, frequency <= fmax)
 
     floc = np.linspace(0, len(frequency[mask])-1, 11, dtype = int)
     flab = np.around(np.ceil(frequency[floc]), decimals = 1)
@@ -204,7 +198,7 @@ def fourier_fx_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -
     tloc = np.linspace(0, nt-1, 11, dtype = int)
     tlab = np.around(tloc*dt, decimals = 1)
 
-    fig, ax = plt.subplots(num = f"Common {label} gather with its 1D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
+    fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5))
 
     im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
@@ -235,7 +229,7 @@ def fourier_fx_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -
     fig.tight_layout()
     plt.show()
 
-def fourier_fk_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -> None:
+def fourier_fk_domain(data : sgy.SegyFile, **kwargs) -> None:
     '''
     Plot the amplitude spectra of each trace in gather according to a specific header keyword.
     
@@ -243,25 +237,20 @@ def fourier_fk_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -
     
     data: segyio object.
 
-    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    key: header keyword options -> ["src", "rec", "cmp"]
     
     index: integer that select a common gather.  
 
-    fmin: minimum frequency to visualize    
-    
-    fmin: maximum frequency to visualize    
-
-    ### Hint:
-
-    If no keys or indexes provided, it will be plot the first shot gather.  
+    fmax: maximum frequency to visualize    
     
     ### Examples:
 
-    >>> view.fourier_fk_domain(data, fmin = 0, fmax = 100, key = "src", index = 51)
-    >>> view.fourier_fk_domain(data, fmin = 0, fmax = 100, key = "rec", index = 203)
-    >>> view.fourier_fk_domain(data, fmin = 0, fmax = 100, key = "cmp", index = 315)
-    >>> view.fourier_fk_domain(data, fmin = 0, fmax = 100, key = "off", index = 223750)
+    >>> view.fourier_fx_domain(data, fmax = 200)               # plots first shot             
+    >>> view.fourier_fx_domain(data, key = "rec", index = 789) # plots rec index 789  
+    >>> view.fourier_fx_domain(data, key = "cmp", index = 512) # plots cmp index 512
     '''    
+
+    fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
 
     key = kwargs.get("key") if "key" in kwargs else "src"
     index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
@@ -269,7 +258,7 @@ def fourier_fk_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
 
-    byte, label = mng.__keywords.get(key)
+    byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
@@ -278,26 +267,18 @@ def fourier_fk_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -
 
     seismic = data.trace.raw[:].T
     seismic = seismic[:, traces]
-    
-    sx = data.attributes(73)[traces] / data.attributes(71)[traces]
-    sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
-    sz = data.attributes(45)[traces] / data.attributes(71)[traces]
-
-    rx = data.attributes(81)[traces] / data.attributes(69)[traces]
-    ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
-    rz = data.attributes(41)[traces] / data.attributes(69)[traces]
-    
-    distance = np.sqrt((sx - rx)**2 + (sy - ry)**2 + (sz - rz)**2)
+        
+    distance = data.attributes(37)[traces] / data.attributes(69)[traces]
 
     nx = len(traces)
-    dh = np.median(np.abs(distance[1:] - distance[:-1])) 
-    
+    dh = np.median(np.abs(np.abs(distance[1:]) - np.abs(distance[:-1]))) 
+
     fk_seismic = np.fft.fftshift(np.fft.fft2(seismic))
 
     frequency = np.fft.fftshift(np.fft.fftfreq(nt, dt))
     wavenumber = np.fft.fftshift(np.fft.fftfreq(nx, dh))
 
-    mask = np.logical_and(frequency >= fmin, frequency <= fmax)
+    mask = np.logical_and(frequency >= 0.0, frequency <= fmax)
 
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
     xlab = traces[xloc]
@@ -311,9 +292,9 @@ def fourier_fk_domain(data : sgy.SegyFile, fmin = 0.0, fmax = 100.0, **kwargs) -
     kloc = np.linspace(0, len(wavenumber)-1, 5, dtype = int)
     klab = np.around(wavenumber[kloc], decimals = 3)
 
-    scale = 0.9*np.std(seismic)
+    scale = 0.8*np.std(seismic)
     
-    fig, ax = plt.subplots(num = f"Common {label} gather with its 2D fourier transform", ncols = 2, nrows = 1, figsize = (10, 5))
+    fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5))
 
     im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
@@ -361,10 +342,6 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
     
     index: integer that select a common gather.  
 
-    ### Hint:
-
-    If no keys or indexes provided, it will be plot the first shot gather.  
-
     ### Examples:
 
     >>> view.difference(data,data_filt, key = "src", index = 51)
@@ -374,12 +351,11 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    tlag = kwargs.get("tlag") if "tlag" in kwargs else 0.0
     index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(input, key)[0] 
 
     mng.__check_keyword(key)
 
-    byte, label = mng.__keywords.get(key)
+    byte = mng.__keywords.get(key)
 
     traces = np.where(input.attributes(byte)[:] == index)[0]
     
@@ -396,7 +372,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
 
     scale = 0.9*np.std(seismic_output)
 
-    fig, ax = plt.subplots(num = f"Common {label} gather", ncols = 3, nrows = 1, figsize = (18, 5))
+    fig, ax = plt.subplots(ncols = 3, nrows = 1, figsize = (18, 5))
 
     def set_config(p, fx):
                 
@@ -404,7 +380,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
         xlab = traces[xloc]
     
         tloc = np.linspace(0, nt-1, 11, dtype = int)
-        tlab = np.around(tloc*dt + tlag, decimals = 3)
+        tlab = np.around(tloc*dt, decimals = 3)
         
         ax[p].set_yticks(tloc)
         ax[p].set_yticklabels(tlab)
