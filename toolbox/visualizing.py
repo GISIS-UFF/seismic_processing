@@ -107,11 +107,11 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
     cmpx = data.attributes(181)[:] / data.attributes(69)[:] 
     cmpy = data.attributes(185)[:] / data.attributes(69)[:]
 
-    xmin = min(np.min(sx_complete), np.min(rx_complete))
-    xmax = max(np.max(sx_complete), np.max(rx_complete))
+    xmin = min(np.min(sx_complete), np.min(rx_complete)) - 100
+    xmax = max(np.max(sx_complete), np.max(rx_complete)) + 100
 
-    ymin = min(np.min(sy_complete), np.min(ry_complete))
-    ymax = max(np.max(sy_complete), np.max(ry_complete))
+    ymin = min(np.min(sy_complete), np.min(ry_complete)) - 100
+    ymax = max(np.max(sy_complete), np.max(ry_complete)) + 100
 
     fig, ax = plt.subplots(ncols = 3, nrows = 1, figsize = (15, 5))
 
