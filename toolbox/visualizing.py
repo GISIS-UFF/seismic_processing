@@ -404,8 +404,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
         
     fig.tight_layout()
     plt.show()    
-
-def radon_transform(style : str):
+def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) -> None:
     # Jonatas CMP domain
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # plot: data | radon transform (no wiggle)
@@ -413,95 +412,267 @@ def radon_transform(style : str):
 
     style = ["linear", "parabolic", "hyperbolic"]
 
-    # from numba import jit
-    # import numpy as np
+    from numba import jit
+    import numpy as np
 
-    # @jit(nopython=True)
-    # def radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
+    @jit(nopython=True)
+    def __radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
 
-    # # Adjoint Time-domain Parabolic Radon Operator
+    # Adjoint Time-domain Parabolic Radon Operator
 
-    # # d(nt,nh): data
-    # # dt      : sampling interval
-    # # h(Nh)   : offset
-    # # p(Np)   : curvature of parabola
-    # # href    : reference offset
-    # # Returns m(nt,np) the Radon coefficients 
+    # d(nt,nh): data
+    # dt      : sampling interval
+    # h(Nh)   : offset
+    # p(Np)   : curvature of parabola
+    # href    : reference offset
+    # Returns m(nt,np) the Radon coefficients 
 
-    # # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+    # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
     
-    #     m=np.zeros((Nt,Np))
+        m=np.zeros((Nt,Np))
 
-    #     for itau in range(0,Nt):
-    #         for ih in range(0,Nh):
-    #             for ip in range(0,Np):
-    #                 t = (itau)*dt + p[ip]*(h[ih]/href)**2
-    #                 it = int(t/dt)
-    #                 if it<Nt:
-    #                     if it>0:
-    #                         m[itau,ip] +=  d[it,ih]
+        for itau in range(0,Nt):
+            for ih in range(0,Nh):
+                for ip in range(0,Np):
+                    t = (itau)*dt + p[ip]*(h[ih]/href)**2
+                    it = int(t/dt)
+                    if it<Nt:
+                        if it>0:
+                            m[itau,ip] +=  d[it,ih]
         
-    #     return m
+        return m
             
 
-    # def radon_forward(m,Nt,dt,Nh,h,Np,p,href):
+    def __radon_forward(m,Nt,dt,Nh,h,Np,p,href):
 
-    # # Forward Time-domain Parabolic Radon Transform
+    # Forward Time-domain Parabolic Radon Transform
 
-    # # m(nt,nh): Radon coefficients 
-    # # dt      : sampling interval
-    # # h(Nh)   : offset
-    # # p(Np)   : curvature of parabola
-    # # href    : reference offset
-    # # Returns d(nt,nh) the synthetized data from the Radon coefficients
+    # m(nt,nh): Radon coefficients 
+    # dt      : sampling interval
+    # h(Nh)   : offset
+    # p(Np)   : curvature of parabola
+    # href    : reference offset
+    # Returns d(nt,nh) the synthetized data from the Radon coefficients
 
-    # # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+    # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
-    #     d=np.zeros((Nt,Nh))
+        d=np.zeros((Nt,Nh))
         
-    #     for itau in range(0,Nt):
-    #         for ih in range(0,Nh):
-    #             for ip in range(0,Np):
-    #                 t = (itau)*dt+p[ip]*(h[ih]/href)**2
-    #                 it=int(t/dt)
-    #                 if it<Nt:
-    #                     if it>=0:
-    #                         d[it,ih] +=  m[itau,ip]                   
-    #     return d
+        for itau in range(0,Nt):
+            for ih in range(0,Nh):
+                for ip in range(0,Np):
+                    t = (itau)*dt+p[ip]*(h[ih]/href)**2
+                    it=int(t/dt)
+                    if it<Nt:
+                        if it>=0:
+                            d[it,ih] +=  m[itau,ip]                   
+        return d
         
 
-    # def radon_cg(d,m0,Nt,dt,Nh,h,Np,p,href,Niter):
+    def __radon_cg(d,m0,Nt,dt,Nh,h,Np,p,href,Niter):
             
-    # # LS Radon transform. Finds the Radon coefficients by minimizing
-    # # ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
-    # # The solution is found via CGLS with operators L and L^T applied on the
-    # # flight
+    # LS Radon transform. Finds the Radon coefficients by minimizing
+    # ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
+    # The solution is found via CGLS with operators L and L^T applied on the
+    # flight
 
-    # # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+    # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
-    #     m = m0  
+        m = m0  
         
-    #     s = d-radon_forward(m,Nt,dt,Nh,h,Np,p,href) # d - Lm
-    #     pp = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # pp = L's 
-    #     r = pp
-    #     q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href)
-    #     old = np.sum(np.sum(r*r))
-    #     print("iter","  res")
+        s = d-__radon_forward(m,Nt,dt,Nh,h,Np,p,href) # d - Lm
+        pp = __radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # pp = L's 
+        r = pp
+        q = __radon_forward(pp,Nt,dt,Nh,h,Np,p,href)
+        old = np.sum(np.sum(r*r))
+        print("iter","  res")
         
-    #     for k in range(0,Niter):
-    #          alpha = np.sum(np.sum(r*r))/np.sum(np.sum(q*q))
-    #          m +=  alpha*pp
-    #          s -=  alpha*q
-    #          r = radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # r= L's
-    #          new = np.sum(np.sum(r*r))
-    #          print(k, new)
-    #          beta = new/old
-    #          old = new
-    #          pp = r + beta*pp
-    #          q = radon_forward(pp,Nt,dt,Nh,h,Np,p,href) # q=L pp
+        for k in range(0,Niter):
+             alpha = np.sum(np.sum(r*r))/np.sum(np.sum(q*q))
+             m +=  alpha*pp
+             s -=  alpha*q
+             r = __radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # r= L's
+             new = np.sum(np.sum(r*r))
+             print(k, new)
+             beta = new/old
+             old = new
+             pp = r + beta*pp
+             q = __radon_forward(pp,Nt,dt,Nh,h,Np,p,href) # q=L pp
             
-    #     return m
+        return m
+    
+    def __wigb(ax,d,dt,h,xcur,color):
+
+# Plot wiggle seismic plot (python version of Xin-gong Li faumous wigb.m)
+
+        [nt,nx] = np.shape(d)
+        dmax = np.max(d)
+        d = d/dmax
+        t = np.linspace(0,(nt-1)*dt,nt)
+        tmax = np.amax(t)
+        hmin = np.amin(h)
+        hmax = np.amax(h)
+   
+        c = xcur*np.mean(np.diff(h))
+
+        plt.axis([hmin-2*c, hmax+2*c, tmax, 0.])
+        d[nt-1,:]=0
+        d[0,:]=0
+        for k in range(0,nx):
+            s =d[:,k]*c
+            ax.plot(s+h[k], t, color,linewidth=1)
+            b = h[k]+s.clip(min=0) 
+            ax.fill(b,t,color)
+
+        return
+    
+    def __ricker(dt,f0):    
+         
+#Ricker wavelet of central frequency f0 sampled every dt seconds
+
+# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+
+        nw = 2.5/f0/dt
+        nw = 2*int(nw/2)
+        nc = int(nw/2)
+        a = f0*dt*3.14159265359
+        n = a*np.arange(-nc,nc)
+        b = n**2
+        return (1-2*b)*np.exp(-b)
+
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
+
+    byte = mng.__keywords.get(key)
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+
+    seismic = data.trace.raw[:].T
+    seismic = seismic[:, traces]
+    
+    sx = data.attributes(73)[traces] / data.attributes(71)[traces]
+    sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
+    sz = data.attributes(45)[traces] / data.attributes(71)[traces]
+
+    rx = data.attributes(81)[traces] / data.attributes(69)[traces]
+    ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
+    rz = data.attributes(41)[traces] / data.attributes(69)[traces]
+    
+    distance = np.sqrt((sx - rx)**2 + (sy - ry)**2 + (sz - rz)**2)
+
+    nx = len(traces)
+    dh = np.median(np.abs(distance[1:] - distance[:-1])) 
+    Nh = nx
+
+    Np = 55        # Curvatures
+
+
+    p = np.linspace(-0.1,.2,Np)
+    h = np.linspace(0,(Nh-1)*dh,Nh)
+
+    d = seismic
+    m = np.zeros((nt,Np))
+
+
+    m0 = np.zeros((nt,Np))
+    f0 = 14
+
+    wavelet = __ricker(dt,f0)
+
+    Nw = len(wavelet)
+    href = h[Nh-1]
+
+    m[40:40+Nw,20]=wavelet
+    m[90:90+Nw,24]=-wavelet
+    m[95:95+Nw,14]=-wavelet
+    m[15:15+Nw,4]=wavelet
+
+    m[75:75+Nw,12]=-wavelet
+
+
+    print('d ',np.shape(d))
+
+
+
+    # Invert the Radon coefficients using LS
+
+    m = __radon_cg(d,m0,nt,dt,Nh,h,Np,p,href,10)  # Compute m via inversion using Conjugate Gradients 
+    dp = __radon_forward(m,nt,dt,Nh,h,Np,p,href)  # Predict data from inverted m
+
+    # -----------------------------------
+    # Rest of the stuff is for plotting
+    # -----------------------------------
+
+    xcur = 1.2
+    # plt.figure(figsize=(13, 6), dpi=80)
+           
+    # plt.subplot(1,3,1)
+    # __wigb(d,dt,h,xcur,'b')
+    # plt.title('Data')
+    # plt.xlabel('Offset [m]')
+    # plt.ylabel('Time [s]')
+
+    # plt.subplot(1,3,2)
+    # __wigb(m,dt,p,xcur,'b')
+    # plt.title('Radon')
+    # plt.xlabel('Curvature [s]')
+    # plt.ylabel('Time [s]')
+
+    # plt.subplot(1,3,3)
+    # __wigb(dp,dt,h,xcur,'b')
+    # plt.title('Predicted data')
+    # plt.xlabel('Offset [m]')
+    # plt.ylabel('Time [s]')
+
+    # plt.tight_layout()
+    # plt.show()
+    
+    xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
+    xlab = traces[xloc]
+
+    tloc = np.linspace(0, nt-1, 11, dtype = int)
+    tlab = np.around(tloc*dt, decimals = 1)
+    
+    scale = 0.8*np.std(seismic)
+    
+    fig, ax = plt.subplots(ncols = 4, nrows = 1, figsize = (13, 6))
+
+    im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+
+    ax[0].set_yticks(tloc)
+    ax[0].set_yticklabels(tlab)
+    ax[0].set_xticks(xloc)
+    ax[0].set_xticklabels(xlab)
+
+    ax[0].set_ylabel('Time [s]', fontsize = 15)
+    ax[0].set_xlabel('Trace number', fontsize = 15)
+    ax[0].cbar = fig.colorbar(im, ax = ax[0])
+    ax[0].cbar.set_label("Amplitude", fontsize = 15)
+    
+    __wigb(ax[1],d, dt, h, xcur, 'b')    
+    ax[1].set_title('Data')
+    ax[1].set_xlabel('Offset [m]', fontsize = 15)
+    ax[1].set_ylabel("Time [s]", fontsize = 15)
+
+
+    __wigb(ax[2],m,dt,p,xcur,'b')    
+    ax[2].set_title('Radon')
+    ax[2].set_xlabel('Curvature [s]', fontsize = 15)
+    ax[2].set_ylabel("Time [s]", fontsize = 15)
+
+    
+    __wigb(ax[3],dp,dt,h,xcur,'b')    
+    ax[3].set_title('Data')
+    ax[3].set_xlabel('Offset [m]', fontsize = 15)
+    ax[3].set_ylabel("Time [s]", fontsize = 15)
+    
+    fig.tight_layout()
+    plt.show()
+    
     pass
 
 def semblance():
