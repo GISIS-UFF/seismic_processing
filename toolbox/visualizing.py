@@ -639,7 +639,7 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
     
     scale = 0.8*np.std(seismic)
     
-    fig, ax = plt.subplots(ncols = 4, nrows = 1, figsize = (13, 6))
+    fig, ax = plt.subplots(ncols = 4, nrows = 1, figsize = (20, 6))
 
     im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
@@ -666,7 +666,7 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
 
     
     __wigb(ax[3],dp,dt,h,xcur,'b')    
-    ax[3].set_title('Data')
+    ax[3].set_title('Predicted data')
     ax[3].set_xlabel('Offset [m]', fontsize = 15)
     ax[3].set_ylabel("Time [s]", fontsize = 15)
     
