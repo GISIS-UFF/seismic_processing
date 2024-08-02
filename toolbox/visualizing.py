@@ -1,6 +1,7 @@
 import numpy as np
 import segyio as sgy
 import matplotlib.pyplot as plt
+from numba import jit
 
 from toolbox import managing as mng
 
@@ -412,9 +413,6 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
 
     style = ["linear", "parabolic", "hyperbolic"]
 
-    from numba import jit
-    import numpy as np
-
     @jit(nopython=True)
     def __radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
 
@@ -443,7 +441,7 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
         
         return m
             
-
+    @jit(nopython=True)
     def __radon_forward(m,Nt,dt,Nh,h,Np,p,href):
 
     # Forward Time-domain Parabolic Radon Transform
