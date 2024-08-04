@@ -1,3 +1,6 @@
+from sys import path
+path.append("../")
+
 from toolbox import managing as mng
 
 from toolbox import filtering as filter
@@ -12,19 +15,19 @@ from scipy.interpolate import interp1d
 
 
 
-input_file = "data/overthrust_synthetic_seismic_data.sgy" # Synthetic data
+input_file = "../data/overthrust_synthetic_seismic_data.sgy" # Synthetic data
 
-input_file2 = "data/seismic.segy" #Mobil AVO viking graben line 12
+input_file2 = "../data/seismic.segy" #Mobil AVO viking graben line 12
 
-input_file3 ="data/Line_001.sgy" #Poland 2D
+input_file3 ="../data/Line_001.sgy" #Poland 2D
 
-input_file4 ="data/npr3_field.sgy" #Teapot dome 3D survey (HEAVY FILE)
+input_file4 ="../data/npr3_field.sgy" #Teapot dome 3D survey (HEAVY FILE)
 
-input_file5 ="data/data_filt.sgy"
+input_file5 ="../data/data_filt.sgy"
 
-input_file6 ="data/difference"
+input_file6 ="../data/difference"
 
-input_file7 ="data/polandfilt"
+input_file7 ="../data/polandfilt"
 
 
 

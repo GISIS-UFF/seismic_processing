@@ -1,8 +1,11 @@
+from sys import path
+path.append("../")
+
 import numpy, segyio 
 
 from toolbox import managing as mng
 
-input_file = "data/2D_Land_vibro_data_2ms/Line_001"
+input_file = "../data/2D_Land_vibro_data_2ms/Line_001"
 
 data = mng.import_sgy_file(f"{input_file}.sgy")
 
@@ -34,7 +37,7 @@ data = mng.import_sgy_file(f"{input_file}_raw.sgy")
 tsl = numpy.zeros(nShots * spread, dtype = int)
 tsf = numpy.zeros(nShots * spread, dtype = int)
 
-tsi = numpy.zeros(nShots * spread, dtype = int) + int(dt*1e+6)
+tsi = numpy.zeros(nShots * spread, dtype = int) + int(dt*1e6)
 tsc = numpy.zeros(nShots * spread, dtype = int) + nt
 
 src = numpy.zeros(nShots * spread, dtype = int)
@@ -92,3 +95,4 @@ values = [tsl, tsf, src, rec, off, cmp, gscal,
 mng.edit_trace_header(data, bytes, values)
 
 mng.show_trace_header(data)
+
