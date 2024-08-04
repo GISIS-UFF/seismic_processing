@@ -1,6 +1,7 @@
 import numpy as np
 import segyio as sgy
 import matplotlib.pyplot as plt
+
 from numba import jit
 
 from toolbox import managing as mng
@@ -153,11 +154,13 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     index: integer that select a common gather.  
     
     fmax: maximum frequency to visualize.    
-    
+
+    trace_number: relative trace to show individually.
+
     ### Examples:
 
-    >>> view.fourier_fx_domain(data, fmax = 200)               # plots first shot             
-    >>> view.fourier_fx_domain(data, key = "off")              # plots first offset
+    >>> view.fourier_fx_domain(data, trace_number = 100)       # plots first shot             
+    >>> view.fourier_fx_domain(data, key = "off", fmax = 200)  # plots first offset
     >>> view.fourier_fx_domain(data, key = "rec", index = 789) # plots rec index 789  
     >>> view.fourier_fx_domain(data, key = "cmp", index = 512) # plots cmp index 512
     '''    
@@ -173,13 +176,21 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]    
-    
+
+    trace_number = kwargs.get("trace_number") if "trace_number" in kwargs else 0
+
+    if trace_number > len(traces):
+        print("Wrong argument for trace_number!")
+        print(f"Relative traces available: 0 to {len(traces)-1}")
+        exit()
+
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
     
     seismic = data.trace.raw[:].T
     seismic = seismic[:, traces]
 
+    time = np.arange(nt)*dt
     frequency = np.fft.fftfreq(nt, dt)
     fx_seismic = np.fft.fft(seismic, axis = 0)
 
@@ -199,33 +210,51 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     tloc = np.linspace(0, nt-1, 11, dtype = int)
     tlab = np.around(tloc*dt, decimals = 1)
 
-    fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5))
+    fig, ax = plt.subplots(ncols = 2, nrows = 2, figsize = (10, 9))
 
-    im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    im = ax[0,0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
-    ax[0].set_yticks(tloc)
-    ax[0].set_yticklabels(tlab)
-    ax[0].set_xticks(xloc)
-    ax[0].set_xticklabels(xlab)
+    ax[0,0].plot(trace_number*np.ones(nt), time/dt, "--r")
 
-    ax[0].set_ylabel('Time [s]', fontsize = 15)
-    ax[0].set_xlabel('Trace number', fontsize = 15)
+    ax[0,0].set_yticks(tloc)
+    ax[0,0].set_yticklabels(tlab)
+    ax[0,0].set_xticks(xloc)
+    ax[0,0].set_xticklabels(xlab)
 
-    ax[0].cbar = fig.colorbar(im, ax = ax[0])
-    ax[0].cbar.set_label("Amplitude", fontsize = 15) 
+    ax[0,0].set_ylabel('Time [s]', fontsize = 15)
+    ax[0,0].set_xlabel('Trace number', fontsize = 15)
 
-    fx = ax[1].imshow(np.abs(fx_seismic[mask,:]), aspect = "auto", cmap = "jet")
-   
-    ax[1].set_yticks(floc)
-    ax[1].set_yticklabels(flab)
-    ax[1].set_xticks(xloc)
-    ax[1].set_xticklabels(xlab)
+    ax[0,0].cbar = fig.colorbar(im, ax = ax[0,0])
+    ax[0,0].cbar.set_label("Amplitude", fontsize = 15) 
 
-    ax[1].set_ylabel("Frequency [Hz]", fontsize = 15)
-    ax[1].set_xlabel("Trace number", fontsize = 15)
 
-    ax[1].cbar = fig.colorbar(fx, ax = ax[1])
-    ax[1].cbar.set_label("Amplitude", fontsize = 15) 
+    ax[0,1].plot(seismic[:, trace_number], time)
+    ax[0,1].set_xlabel("Amplitude", fontsize = 15)
+    ax[0,1].set_ylabel("Time [s]", fontsize = 15)
+    ax[0,1].set_xlim([-5*scale, 5*scale])
+    ax[0,1].invert_yaxis()
+
+
+    fx = ax[1,0].imshow(np.abs(fx_seismic[mask,:]), aspect = "auto", cmap = "jet")
+
+    ax[1,0].plot(trace_number*np.ones(len(frequency[mask])), np.arange(len(frequency[mask])), "--r")
+
+    ax[1,0].set_yticks(floc)
+    ax[1,0].set_yticklabels(flab)
+    ax[1,0].set_xticks(xloc)
+    ax[1,0].set_xticklabels(xlab)
+
+    ax[1,0].set_ylabel("Frequency [Hz]", fontsize = 15)
+    ax[1,0].set_xlabel("Trace number", fontsize = 15)
+
+    ax[1,0].cbar = fig.colorbar(fx, ax = ax[1,0])
+    ax[1,0].cbar.set_label("Amplitude", fontsize = 15) 
+
+
+    ax[1,1].plot(np.abs(fx_seismic[mask, trace_number]), frequency[mask])
+    ax[1,1].set_xlabel("Normalized amplitude", fontsize = 15)
+    ax[1,1].set_ylabel("Frequency [Hz]", fontsize = 15)
+    ax[1,1].invert_yaxis()
 
     fig.tight_layout()
     plt.show()
@@ -405,6 +434,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
         
     fig.tight_layout()
     plt.show()    
+
 def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) -> None:
     # Jonatas CMP domain
     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
