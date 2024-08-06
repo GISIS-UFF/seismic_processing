@@ -530,44 +530,19 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
             
         return m
     
-    def __wigb(ax,d,dt,h,xcur,color):
-
-# Plot wiggle seismic plot (python version of Xin-gong Li faumous wigb.m)
-
-        [nt,nx] = np.shape(d)
-        dmax = np.max(d)
-        d = d/dmax
-        t = np.linspace(0,(nt-1)*dt,nt)
-        tmax = np.amax(t)
-        hmin = np.amin(h)
-        hmax = np.amax(h)
-   
-        c = xcur*np.mean(np.diff(h))
-
-        plt.axis([hmin-2*c, hmax+2*c, tmax, 0.])
-        d[nt-1,:]=0
-        d[0,:]=0
-        for k in range(0,nx):
-            s =d[:,k]*c
-            ax.plot(s+h[k], t, color,linewidth=1)
-            b = h[k]+s.clip(min=0) 
-            ax.fill(b,t,color)
-
-        return
-    
-    def __ricker(dt,f0):    
+#     def __ricker(dt,f0):    
          
-#Ricker wavelet of central frequency f0 sampled every dt seconds
+# #Ricker wavelet of central frequency f0 sampled every dt seconds
 
-# M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+# # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
-        nw = 2.5/f0/dt
-        nw = 2*int(nw/2)
-        nc = int(nw/2)
-        a = f0*dt*3.14159265359
-        n = a*np.arange(-nc,nc)
-        b = n**2
-        return (1-2*b)*np.exp(-b)
+#         nw = 2.5/f0/dt
+#         nw = 2*int(nw/2)
+#         nc = int(nw/2)
+#         a = f0*dt*3.14159265359
+#         n = a*np.arange(-nc,nc)
+#         b = n**2
+#         return (1-2*b)*np.exp(-b)
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
@@ -602,62 +577,24 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
     p = np.linspace(-0.1,.2,Np)
     h = np.linspace(0,(Nh-1)*dh,Nh)
 
-    d = seismic
     m = np.zeros((nt,Np))
-
 
     m0 = np.zeros((nt,Np))
     f0 = 14
 
-    wavelet = __ricker(dt,f0)
+    # wavelet = __ricker(dt,f0)
 
-    Nw = len(wavelet)
     href = h[Nh-1]
 
-    m[40:40+Nw,20]=wavelet
-    m[90:90+Nw,24]=-wavelet
-    m[95:95+Nw,14]=-wavelet
-    m[15:15+Nw,4]=wavelet
+    # m[40:40+Nw,20]=wavelet
+    # m[90:90+Nw,24]=-wavelet
+    # m[95:95+Nw,14]=-wavelet
+    # m[15:15+Nw,4]=wavelet
 
-    m[75:75+Nw,12]=-wavelet
+    # m[75:75+Nw,12]=-wavelet
 
-
-    print('d ',np.shape(d))
-
-
-
-    # Invert the Radon coefficients using LS
-
-    m = __radon_cg(d,m0,nt,dt,Nh,h,Np,p,href,10)  # Compute m via inversion using Conjugate Gradients 
+    m = __radon_cg(seismic,m0,nt,dt,Nh,h,Np,p,href,10)  # Compute m via inversion using Conjugate Gradients 
     dp = __radon_forward(m,nt,dt,Nh,h,Np,p,href)  # Predict data from inverted m
-
-    # -----------------------------------
-    # Rest of the stuff is for plotting
-    # -----------------------------------
-
-    xcur = 1.2
-    # plt.figure(figsize=(13, 6), dpi=80)
-           
-    # plt.subplot(1,3,1)
-    # __wigb(d,dt,h,xcur,'b')
-    # plt.title('Data')
-    # plt.xlabel('Offset [m]')
-    # plt.ylabel('Time [s]')
-
-    # plt.subplot(1,3,2)
-    # __wigb(m,dt,p,xcur,'b')
-    # plt.title('Radon')
-    # plt.xlabel('Curvature [s]')
-    # plt.ylabel('Time [s]')
-
-    # plt.subplot(1,3,3)
-    # __wigb(dp,dt,h,xcur,'b')
-    # plt.title('Predicted data')
-    # plt.xlabel('Offset [m]')
-    # plt.ylabel('Time [s]')
-
-    # plt.tight_layout()
-    # plt.show()
     
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
     xlab = traces[xloc]
@@ -667,10 +604,9 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
     
     scale = 0.8*np.std(seismic)
     
-    fig, ax = plt.subplots(ncols = 4, nrows = 1, figsize = (20, 6))
+    fig, ax = plt.subplots(ncols = 3, nrows = 1, figsize = (20, 6))
 
-    im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
-
+    iseismic = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
     ax[0].set_yticks(tloc)
     ax[0].set_yticklabels(tlab)
     ax[0].set_xticks(xloc)
@@ -678,25 +614,22 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
 
     ax[0].set_ylabel('Time [s]', fontsize = 15)
     ax[0].set_xlabel('Trace number', fontsize = 15)
-    ax[0].cbar = fig.colorbar(im, ax = ax[0])
+    ax[0].cbar = fig.colorbar(iseismic, ax = ax[0])
     ax[0].cbar.set_label("Amplitude", fontsize = 15)
-    
-    __wigb(ax[1],d, dt, h, xcur, 'b')    
-    ax[1].set_title('Data')
-    ax[1].set_xlabel('Offset [m]', fontsize = 15)
+
+    icurvature = ax[1].imshow(m, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)    
+    ax[1].set_title('Radon')
+    ax[1].set_xlabel('Curvature [s]', fontsize = 15)
     ax[1].set_ylabel("Time [s]", fontsize = 15)
-
-
-    __wigb(ax[2],m,dt,p,xcur,'b')    
-    ax[2].set_title('Radon')
-    ax[2].set_xlabel('Curvature [s]', fontsize = 15)
-    ax[2].set_ylabel("Time [s]", fontsize = 15)
-
+    ax[1].cbar = fig.colorbar(icurvature, ax = ax[1])
+    ax[1].cbar.set_label("Amplitude", fontsize = 15)
     
-    __wigb(ax[3],dp,dt,h,xcur,'b')    
-    ax[3].set_title('Predicted data')
-    ax[3].set_xlabel('Offset [m]', fontsize = 15)
-    ax[3].set_ylabel("Time [s]", fontsize = 15)
+    idp = ax[2].imshow(dp, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)    
+    ax[2].set_title('Predicted data')
+    ax[2].set_xlabel('Offset [m]', fontsize = 15)
+    ax[2].set_ylabel("Time [s]", fontsize = 15)
+    ax[2].cbar = fig.colorbar(idp, ax = ax[2])
+    ax[2].cbar.set_label("Amplitude", fontsize = 15)
     
     fig.tight_layout()
     plt.show()
