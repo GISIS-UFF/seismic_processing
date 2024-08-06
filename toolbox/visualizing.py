@@ -703,79 +703,64 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
     
     pass
 
-def semblance():
-    # Amanda CMP domain
+def semblance(data : sgy.SegyFile, index : int):
+    """
+    Plot the velocity semblance of the according CMP Gather
 
-    # nt = 5001
-    # dt = 1e-3
+    Parameters:
+    data: segyio object
+        The seismic data file.
+    index: int
+        The index of the CMP gather.
+    """
+    key = 'cmp'
+    mng.__check_index(data, key, index)
 
-    # nx = 161
-    # dx = 25.0
+    byte, label = __keywords.get(key) # Obtém byte e label da keyword
+    traces = np.where(data.attributes(byte)[:] == index)[0]  # Seleciona os traços correspondentes ao índice de CMP
+    seismic = data.trace.raw[:].T  # Carrega os dados e transpõe a matriz
+    seismic = seismic[:, traces]  # Seleciona apenas os traços correspondentes ao índice
 
-    # vi = 1000
-    # vf = 3000
-    # dv = 50
+    vmin = 0  # Velocidade mínima (m/s) - colocar editável com kwargs.get 
+    vmax = 6000  # Velocidade máxima (m/s) - colocar editável com kwargs.get
+    dv = 200  # Step da velocidade (m/s)
+    tmin = 0.0  # Tempo mínimo (s)
+    dt = 0.004  # Step de tempo (s)
 
-    # filename = f"cmp_gather_{nt}x{nx}_{dt*1e6:.0f}us.bin"
+    nt = data.samples.size  # Número de amostras no tempo.
+    tmax = nt * dt  # Tempo máximo calculado com base no número de amostras e no incremento de tempo.
 
-    # seismic = np.fromfile(filename, dtype = np.float32, count = nt*nx)
-    # seismic = np.reshape(seismic, [nt,nx], order = "F")
+    num_samples = int((tmax - tmin) / dt)  # Calcula o número de amostras de tempo.
+    num_velocities = int((vmax - vmin) / dv)  # Calcula o número de incrementos de velocidade.
+    semblance = np.zeros((num_samples, num_velocities))  # Inicializa a matriz de semblance.
 
-    # vrms = np.arange(vi, vf + dv, dv)
-    # offset = np.arange(nx, dtype = int)
+    time = np.arange(tmin, tmax, dt) # array do tempo
+    velocities = np.arange(vmin, vmax, dv) # array de velocidade
 
-    # time = np.arange(nt) * dt
+    for i, t0 in enumerate(time):  # Loop sobre cada tempo
+        for j, v in enumerate(velocities):  # Loop sobre cada velocidade
+            moveout = np.sqrt(t0**2 + (np.arange(len(traces)) * dt / v)**2)  # Calcula o moveout para cada traço
+            stack = np.zeros_like(moveout)  # Inicializa o stack
+            for k, trace in enumerate(seismic.T):  # Loop sobre cada traço
+                # Interpola o traço sísmico ao longo do moveout
+                stack += np.interp(moveout, np.arange(0, len(trace)), trace, left=0, right=0)
+            # Calcula o semblance.
+            semblance[i, j] = np.sum(stack**2) / (len(traces) * np.sum(stack**2 / len(traces)))
+            scale = 0.9 * np.std(semblance)  # Define a escala de visualização com base no desvio padrão do semblance
 
-    # semblance = np.zeros((nt, len(vrms)))
+    fig, ax = plt.subplots(figsize=(10, 8))  # Cria uma figura e um eixo para o plot
+    img = ax.imshow(semblance.T, aspect='auto', cmap='jet', vmin=0, vmax=scale,
+                    extent=[tmin, tmax, vmin, vmax])  # Plota a matriz de semblance
 
-    # for indt, t0 in enumerate(time):
-    #     for indv, v in enumerate(vrms):
-        
-    #         target = np.array(np.sqrt(t0**2 + (offset*dx/v)**2) / dt, dtype = int) 
+    ax.set_xlabel('Time [s]', fontsize=15) 
+    ax.set_ylabel('Velocity [m/s]', fontsize=15)
 
-    #         mask = target < nt
-        
-    #         t = target[mask]
-    #         x = offset[mask]
-        
-    #         semblance[indt, indv] = np.sum(np.abs(seismic[t,x]))**2    
+    cbar = fig.colorbar(img, ax=ax) 
+    cbar.set_label("Semblance", fontsize=15)
 
-    # xloc = np.linspace(0, len(vrms)-1, 9)
-    # xlab = np.linspace(vi, vf, 9)
-
-    # tloc = np.linspace(0, nt, 11)
-    # tlab = np.around(np.linspace(0, nt-1, 11)*dt, decimals = 3)
-
-    # scale = 15.0*np.std(semblance)
-
-    # fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10,8))
-
-    # ax[0].imshow(seismic, aspect = "auto", cmap = "Greys")
-    # ax[0].set_yticks(tloc)
-    # ax[0].set_yticklabels(tlab)
-
-    # ax[0].set_xticks(np.linspace(0,nx,5))
-    # ax[0].set_xticklabels(np.linspace(0,nx-1,5, dtype = int)*dx)
-
-    # ax[0].set_title("CMP Gather", fontsize = 18)
-    # ax[0].set_xlabel("Offset [m]", fontsize = 15)
-    # ax[0].set_ylabel("Two Way Time [s]", fontsize = 15)
-
-    # ax[1].imshow(semblance, aspect = "auto", cmap = "jet", vmin = -scale, vmax = scale)
-
-    # ax[1].set_xticks(xloc)
-    # ax[1].set_xticklabels(xlab*1e-3)
-
-    # ax[1].set_yticks(tloc)
-    # ax[1].set_yticklabels(tlab)
-
-    # ax[1].set_title("Semblance", fontsize = 18)
-    # ax[1].set_xlabel("RMS Velocity [km/s]", fontsize = 15)
-    # ax[1].set_ylabel("Two Way Time [s]", fontsize = 15)
-
-    # fig.tight_layout()
-    # plt.grid()
-    # plt.show()
-
+    fig.tight_layout() 
+    plt.show()
+    
+    
     pass
 
