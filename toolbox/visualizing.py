@@ -448,9 +448,9 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
 
     # Adjoint Time-domain Parabolic Radon Operator
 
-    # d(nt,nh): data
-    # dt      : sampling interval
-    # h(Nh)   : offset
+    # d(nt,nh): data                             ##### seismic
+    # dt      : sampling interval                ##### dt = data.attributes(117)[0][0] * 1e-6
+    # h(Nh)   : offset                           ##### offset = data.attributes(37)[:]
     # p(Np)   : curvature of parabola
     # href    : reference offset
     # Returns m(nt,np) the Radon coefficients 
@@ -477,8 +477,8 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
     # Forward Time-domain Parabolic Radon Transform
 
     # m(nt,nh): Radon coefficients 
-    # dt      : sampling interval
-    # h(Nh)   : offset
+    # dt      : sampling interval                                            ##### dt = data.attributes(117)[0][0] * 1e-6
+    # h(Nh)   : offset                                                       ##### offset = data.attributes(37)[:]
     # p(Np)   : curvature of parabola
     # href    : reference offset
     # Returns d(nt,nh) the synthetized data from the Radon coefficients
@@ -550,6 +550,7 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
     byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
+    offset = data.attributes(37)[:]
 
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
@@ -567,12 +568,14 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
     
     distance = np.sqrt((sx - rx)**2 + (sy - ry)**2 + (sz - rz)**2)
 
-    nx = len(traces)
+    # nx = len(traces)
+
+    # h = offset  # offset
+    
     dh = np.median(np.abs(distance[1:] - distance[:-1])) 
-    Nh = nx
-
+    
+    Nh = len(traces)
     Np = 55        # Curvatures
-
 
     p = np.linspace(-0.1,.2,Np)
     h = np.linspace(0,(Nh-1)*dh,Nh)
@@ -598,7 +601,7 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
     
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
     xlab = traces[xloc]
-
+    print('traces = ', traces)
     tloc = np.linspace(0, nt-1, 11, dtype = int)
     tlab = np.around(tloc*dt, decimals = 1)
     
@@ -617,14 +620,18 @@ def radon_transform(data : sgy.SegyFile, key : str, index : int, style : str) ->
     ax[0].cbar = fig.colorbar(iseismic, ax = ax[0])
     ax[0].cbar.set_label("Amplitude", fontsize = 15)
 
-    icurvature = ax[1].imshow(m, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)    
+    icurvature = ax[1].imshow(m, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    ax[1].set_yticks(tloc)
+    ax[1].set_yticklabels(tlab)    
     ax[1].set_title('Radon')
     ax[1].set_xlabel('Curvature [s]', fontsize = 15)
     ax[1].set_ylabel("Time [s]", fontsize = 15)
     ax[1].cbar = fig.colorbar(icurvature, ax = ax[1])
     ax[1].cbar.set_label("Amplitude", fontsize = 15)
     
-    idp = ax[2].imshow(dp, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)    
+    idp = ax[2].imshow(dp, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    ax[2].set_yticks(tloc)
+    ax[2].set_yticklabels(tlab)    
     ax[2].set_title('Predicted data')
     ax[2].set_xlabel('Offset [m]', fontsize = 15)
     ax[2].set_ylabel("Time [s]", fontsize = 15)
