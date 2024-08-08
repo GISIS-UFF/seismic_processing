@@ -191,4 +191,4 @@ def edit_trace_header(data : sgy.SegyFile, bytes : list, values : list[np.ndarra
     for i in range(data.tracecount):
         for k, byte in enumerate(bytes):
             if byte in __keywords.values():
-                data.header[i][byte] = values[k][i]
+                data.header[i][byte] = int(values[k][i])
