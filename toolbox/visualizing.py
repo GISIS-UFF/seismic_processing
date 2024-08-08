@@ -732,25 +732,29 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
 #     plt.show()
     
 
-def semblance_correlation(data : sgy.SegyFile, **kwargs):
+def semblance(data : sgy.SegyFile, **kwargs):
     """
     Plot the velocity semblance of the according CMP Gather
 
-    ### Parameters:
+    ### Mandatory Parameters:
 
-    data: segyio objec.
-    
-    index: CMP gather index.
-    
-    vmin: minimum velocity in semblance.
-    
-    vmax: maximum velocity in semblance.
+    data: segyio object.
 
-    dv: velocity variation in semblance.
+    ### Other Parameters
+
+    index: CMP gather index. - First Complete CMP as Default
+    
+    vmin: minimum velocity in semblance. - 500.0 ms as Default
+    
+    vmax: maximum velocity in semblance. - 5000.0 ms as Default
+
+    dv: velocity variation in semblance. - 250.0 ms as Default
+
 
     ### Examples:
     
     >>> view.semblance(data)
+    >>> view.semblance(data, index=index, vmax=vmax)
     
     """
 
@@ -766,7 +770,7 @@ def semblance_correlation(data : sgy.SegyFile, **kwargs):
 
     mng.__check_index(data, key, index)
 
-    vmin = kwargs.get("vmin") if "vmin" in kwargs else 1500.0
+    vmin = kwargs.get("vmin") if "vmin" in kwargs else 500.0
     vmax = kwargs.get("vmax") if "vmax" in kwargs else 5000.0 
     dv = kwargs.get("dv") if "dv" in kwargs else 250.0
 
@@ -787,39 +791,43 @@ def semblance_correlation(data : sgy.SegyFile, **kwargs):
 
     semblance = np.zeros((nt, nv)) 
 
-    for i in range(500,501):  
+    for i in range(nt): 
         for j in range(nv):  
             
             moveout = np.array(np.sqrt(times[i]**2 + (offset/velocities[j])**2) / dt, dtype = int)   
 
-            plt.plot(moveout)
+            mask = moveout < nt
 
-            # mask = moveout < nt
-
-            # t = moveout[mask]
-            # x = np.arange(len(traces))[mask]
+            t = moveout[mask]
+            x = np.arange(len(traces))[mask]
     
-            # semblance[i,j] += np.sum(np.abs(seismic[t,x]))**2            
+            semblance[i, j] += np.sum(np.abs(seismic[t, x]))**2         
 
-    plt.imshow(seismic, aspect = 'auto', cmap = 'Greys', vmin = -np.std(seismic), vmax = np.std(seismic))
-    plt.ylim([0,nt])
-    plt.gca().invert_yaxis()
+    vmin_gather = np.percentile(seismic, 1)
+    vmax_gather = np.percentile(seismic, 99) 
+
+    fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5)) 
+
+    im1 = ax[0].imshow(seismic, aspect='auto', cmap='Greys', vmin=vmin_gather, vmax=vmax_gather, extent=[0, seismic.shape[1], times[-1], times[0]])
+    ax[0].set_xlabel('Trace number', fontsize=15)
+    ax[0].set_ylabel('Time [s]', fontsize=15)
+    cbar1 = fig.colorbar(im1, ax=ax[0])
+    cbar1.set_label("Amplitude", fontsize=10)
+
+    im2 = ax[1].imshow(semblance, aspect='auto', cmap='jet', extent=[vmin, vmax, times[-1], times[0]])
+    ax[1].set_xlabel('Velocity [m/s]', fontsize=15)
+    ax[1].set_ylabel('Time [s]', fontsize=15)
+    cbar2 = fig.colorbar(im2, ax=ax[1])
+    cbar2.set_label("Semblance", fontsize=10)
+
+    ax[1].set_xlim(vmin, vmax)
+
+    ax[1].set_xlabel('Velocity [m/s]', fontsize=15)
+    ax[1].set_ylabel('Time [s]', fontsize=15)
+    
+    fig.suptitle(f'Velocity Semblance - Curent CMP: {index}', fontsize=16)
+
+    fig.tight_layout() 
     plt.show()
-
-    # fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5)) 
-
-    # ax[0].imshow(seismic, aspect = 'auto', cmap = 'Greys') 
-
-    # ax[1].imshow(semblance, aspect = 'auto', cmap = 'jet')
-
-    # ax.set_xlabel('Time [s]', fontsize=15) 
-    # ax.set_ylabel('Velocity [m/s]', fontsize=15)
-
-    # cbar = fig.colorbar(img, ax=ax) 
-    # cbar.set_label("Semblance", fontsize=15)
-
-    # fig.tight_layout() 
-    # plt.show()
-    
     
 

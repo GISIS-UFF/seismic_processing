@@ -8,4 +8,6 @@ input_file = "../data/overthrust_synthetic_seismic_data.sgy"
 
 data = mng.import_sgy_file(input_file)
 
+index = 50
+
 view.semblance(data)
