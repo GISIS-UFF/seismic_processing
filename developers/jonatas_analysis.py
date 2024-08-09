@@ -100,11 +100,11 @@ view.gather(data)
 view.geometry(data)
 view.radon_transform(data, style = "hyperbolic", index = 1, vmin = 1000, vmax = 3000)
 
-
-
 # data2 = mng.import_sgy_file("../data/overthrust_synthetic_seismic_data.sgy")
+data2 = mng.import_sgy_file("../data/seismic_radon_test.sgy")
 
-# style = 'hyperbolic'
-# key = 'cmp'
-# index = 256
-# view.radon_transform2(data2, key, index, style)
+
+style = 'hyperbolic'
+key = 'cmp'
+index = 1
+view.radon_transform2(data2, key, index, style)
