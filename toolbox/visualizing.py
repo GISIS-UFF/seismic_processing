@@ -530,9 +530,17 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
 
 
 
+### TESTE DA FUNÇAO -----
 
+# def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -> None:
+#     # Jonatas CMP domain
+#     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#     # plot: data | radon transform (no wiggle)
+#     #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+#     style = ["linear", "parabolic", "hyperbolic"]
 
+#     @jit(nopython=True)
 
 #     def __radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
 
@@ -640,7 +648,8 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
 #     byte = mng.__keywords.get(key)
 
 #     traces = np.where(data.attributes(byte)[:] == index)[0]
-#     offset = data.attributes(37)[:]
+#     offset = data.attributes(37)[traces] / data.attributes(69)[traces]
+
 
 #     nt = data.attributes(115)[0][0]
 #     dt = data.attributes(117)[0][0] * 1e-6
@@ -658,13 +667,14 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
     
 #     distance = np.sqrt((sx - rx)**2 + (sy - ry)**2 + (sz - rz)**2)
 
-#     # nx = len(traces)
+#     nx = len(traces)
 
-#     # h = offset  # offset
+#     h = offset  # offset
     
 #     dh = np.median(np.abs(distance[1:] - distance[:-1])) 
+#     # dh = 25
     
-#     Nh = len(traces)
+#     Nh = len(offset)
 #     Np = 55        # Curvatures
 
 #     p = np.linspace(-0.1,.2,Np)
@@ -730,6 +740,8 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
     
 #     fig.tight_layout()
 #     plt.show()
+
+#     pass
     
 
 def semblance(data : sgy.SegyFile, **kwargs):

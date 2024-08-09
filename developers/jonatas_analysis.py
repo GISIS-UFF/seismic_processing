@@ -99,3 +99,12 @@ mng.show_trace_header(data)
 view.gather(data)
 view.geometry(data)
 view.radon_transform(data, style = "hyperbolic", index = 1, vmin = 1000, vmax = 3000)
+
+
+
+# data2 = mng.import_sgy_file("../data/overthrust_synthetic_seismic_data.sgy")
+
+# style = 'hyperbolic'
+# key = 'cmp'
+# index = 256
+# view.radon_transform2(data2, key, index, style)
