@@ -59,7 +59,7 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
 
     byte = __keywords.get(key)
 
-    return print(np.unique(data.attributes(byte)))
+    return np.unique(data.attributes(byte))
 
 def import_sgy_file(input_name: str) -> sgy.SegyFile:
     '''
