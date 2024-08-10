@@ -1,1 +1,4 @@
 data/Poland_vibroseis_2D/Line_001.sgy filter=lfs diff=lfs merge=lfs -text
+data/GISIS_synthetic_data_ex1.sgy filter=lfs diff=lfs merge=lfs -text
+data/GISIS_synthetic_data_ex2.sgy filter=lfs diff=lfs merge=lfs -text
+data/mobil_viking_graben_north_sea.sgy filter=lfs diff=lfs merge=lfs -text
