@@ -9,7 +9,7 @@ from toolbox import managing as mng
 ponto_parada= None
 interpolated_line = None
 
-def interactive_velocitty_analysis(data : sgy.SegyFile, **kwargs):
+def interactive_velocity_analysis(data : sgy.SegyFile, **kwargs):
     """
     Plot the velocity semblance of the according CMP Gather
 
