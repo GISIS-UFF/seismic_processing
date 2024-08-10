@@ -5,7 +5,7 @@ __keywords = {'tsl'  : 1,   # trace sequence line
               'tsf'  : 5,   # trace sequence file     
               'src'  : 9,   # shot id 
               'rec'  : 13,  # receiver id 
-              'cmp'  : 21,  # mid point point id
+              'cmp'  : 21,  # mid point id
               'off'  : 37,  # offset id 
               'zrec' : 41,  # receiver elevation
               'zsrc' : 45,  # source elevation

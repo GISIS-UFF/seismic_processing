@@ -1,11 +1,10 @@
-from sys import path
-path.append("../")
+import sys; sys.path.append("../")
 
 import numpy, segyio 
 
 from toolbox import managing as mng
 
-input_file = "../data/2D_Land_vibro_data_2ms/Line_001"
+input_file = "../data/Poland_vibroseis_2D/Line_001"
 
 data = mng.import_sgy_file(f"{input_file}.sgy")
 
@@ -93,6 +92,3 @@ values = [tsl, tsf, src, rec, off, cmp, gscal,
           xrec, yrec, cmpx, cmpy]
 
 mng.edit_trace_header(data, bytes, values)
-
-mng.show_trace_header(data)
-
