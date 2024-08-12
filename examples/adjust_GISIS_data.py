@@ -11,6 +11,12 @@ spread = 469
 scalar = 100
 
 ds = 50.0
+dr = 12.5
+
+min_off = 150
+max_off = 6000
+
+mng.show_trace_header(data)
 
 tsl = numpy.zeros(nShots * spread, dtype = int)
 tsf = numpy.zeros(nShots * spread, dtype = int)
@@ -40,25 +46,26 @@ for shot in range(nShots):
     fill = slice(shot*spread, shot*spread + spread)
 
     tsl[fill] = 1 + spread_index + shot*spread
-    tsf[fill] = shot + 1
+    tsf[fill] = shot + 1001
     src[fill] = shot + 1
     
-    xsrc[fill] = (6000 + shot*ds)*scalar
-    ysrc[fill] = (6000 + shot*ds)*scalar
+    xsrc[fill] = (max_off + shot*ds)*scalar
+    ysrc[fill] = (max_off + shot*ds)*scalar
     zsrc[fill] = 0.0
 
-    rec[fill] = [k+1 for k in range(spread)]
+    rec[fill] = [k + shot*(ds/dr) + 1 for k in range(spread)][::-1]
     
-    off[fill] = numpy.array([x*scalar for x in numpy.linspace(150, 6000, spread)], dtype = int)     
+    off[fill] = numpy.array([x*scalar for x in numpy.linspace(min_off, max_off, spread)], dtype = int)     
     
-    xrec[fill] = (off[fill][::-1] + shot*ds*scalar) - 15000   
-    yrec[fill] = (off[fill][::-1] + shot*ds*scalar) - 15000   
+    xrec[fill] = (off[fill][::-1] + shot*ds*scalar) - min_off*scalar   
+    yrec[fill] = (off[fill][::-1] + shot*ds*scalar) - min_off*scalar   
     zrec[fill] = 0.0    
 
-    cmp[fill] = numpy.arange(spread, dtype = int)[::-1] + 8*shot + 1
+    cmp[fill] = numpy.arange(spread, dtype = int)[::-1] + 2.0*(ds/dr)*shot + 1
     
     cmpx[fill] = xsrc[fill] - 0.5*(xsrc[fill] - xrec[fill]) 
     cmpy[fill] = ysrc[fill] - 0.5*(ysrc[fill] - yrec[fill]) 
+
 
 bytes = [1, 5, 9, 13, 21, 37, 41, 45, 69, 73, 77, 81, 85, 181, 185]
 
@@ -67,4 +74,5 @@ values = [tsl, tsf, src, rec, cmp, off, zrec, zsrc, gscal,
 
 mng.edit_trace_header(data, bytes, values)
 
+mng.show_trace_header(data)
 

@@ -32,7 +32,9 @@ def fourier_fx_domain(input : sgy.SegyFile, fmin : float, fmax : float, output_n
     return output
 
 def fourier_fk_domain(data : sgy.SegyFile, angle : float) -> sgy.SegyFile:
-    
+    pass
+
+def apply_mute():
     pass
 
 ### TESTE DA FUNÇAO -----

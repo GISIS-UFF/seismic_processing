@@ -4,14 +4,17 @@ import numpy, segyio
 
 from toolbox import managing as mng
 
-input_file = "../data/Poland_vibroseis_2D/Line_001"
+input_file = "../data/2D_Land_vibro_data_2ms/Line_001"
 
 data = mng.import_sgy_file(f"{input_file}.sgy")
+
+mng.show_trace_header(data)
 
 nt = 1501
 dt = 2e-3
 
 dr = 25.0
+ds = 50.0
 
 scalar = 100
 
@@ -80,7 +83,7 @@ for shot in range(nShots):
 
     off[fill] = numpy.array([int(x) for x in numpy.linspace(-0.5*spread, 0.5*spread, spread+1) if x != 0], dtype = int)*dr*scalar     
     
-    cmp[fill] = numpy.arange(spread, dtype = int) + 4*shot + 1
+    cmp[fill] = numpy.arange(spread, dtype = int) + 2.0*(ds/dr)*shot + 1
     cmpx[fill] = xsrc[fill] - 0.5*(xsrc[fill] - xrec[fill]) 
     cmpy[fill] = ysrc[fill] - 0.5*(ysrc[fill] - yrec[fill]) 
 
@@ -92,3 +95,5 @@ values = [tsl, tsf, src, rec, off, cmp, gscal,
           xrec, yrec, cmpx, cmpy]
 
 mng.edit_trace_header(data, bytes, values)
+
+mng.show_trace_header(data)

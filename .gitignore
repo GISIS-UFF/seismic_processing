@@ -6,3 +6,6 @@ __pycache__
 *.TXT
 *.pdf
 *.segy
+*.RPS
+*.SPS
+*.XPS

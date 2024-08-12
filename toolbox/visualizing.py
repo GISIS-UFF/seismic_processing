@@ -84,7 +84,7 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
 
     >>> view.geometry(data)                           # plots first shot 
     >>> view.geometry(data, key = "off")              # plots first offset
-    >>> view.geometry(data, key = "rec", index = 789) # plots rec index 789
+    >>> view.geometry(data, key = "rec", index = 35)  # plots rec index 789
     >>> view.geometry(data, key = "cmp", index = 512) # plots cmp index 512
     '''    
 
