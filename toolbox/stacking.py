@@ -93,15 +93,14 @@ def interactive_velocity_analysis(data : sgy.SegyFile, **kwargs):
                 points.append((x, y))
                 plt.plot(x, y, 'ro')
                 plt.draw()
-                print(points)
+                
             else:
                 points.append((x, y))
                 plt.plot(x, y, 'bo')
-                print(points)
+                
             plt.draw()
-            
-            # for i in range (1,camadas):
-            #     vint[i]=np.sqrt(((vrms[i])**2*points[i]-(vrms[i-1])**2*points[1])/(tt[i]-tt[i-1]))
+        
+           
         else:
             print('Clique fora dos eixos.')
     def on_key(event):
@@ -164,8 +163,18 @@ def interactive_velocity_analysis(data : sgy.SegyFile, **kwargs):
     def save(event):
         if event.key=='c':
             np.savetxt("coordernada", points, fmt = "%.6f")
-            np.savetxt("coordernadainter", points, fmt = "%.6f")
-
+    def add(event):
+        if event.key=='y':
+                p0=points[0][0]
+                p1=points[-1][0]
+                points.append((p0,min(times),))
+                points.append((p1,max(times)))
+                print(points)
+                xn = [p[0] for p in points]
+                yn = [p[1] for p in points]
+                plt.plot(xn,yn,'ro')
+                plt.draw()
+                
 
 
     
@@ -199,7 +208,8 @@ def interactive_velocity_analysis(data : sgy.SegyFile, **kwargs):
     fig.canvas.mpl_connect('key_press_event', onkeypress)
     fig.canvas.mpl_connect('key_press_event', on_key)
     fig.canvas.mpl_connect('key_press_event', stop)
-    fig.canvas.mpl_connect('key_press_event', save) 
+    fig.canvas.mpl_connect('key_press_event', save)
+    fig.canvas.mpl_connect('key_press_event', add)  
     plt.show()
     
 
