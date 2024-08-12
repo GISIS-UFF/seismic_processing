@@ -4,8 +4,7 @@ from toolbox import managing as mng
 
 import numpy
 
-data1 = mng.import_sgy_file("../data/GISIS_synthetic_data_ex1.sgy")
-data2 = mng.import_sgy_file("../data/GISIS_synthetic_data_ex2.sgy")
+data = mng.import_sgy_file("../data/GISIS_synthetic_data.sgy")
 
 nShots = 201
 spread = 469
@@ -66,7 +65,6 @@ bytes = [1, 5, 9, 13, 21, 37, 41, 45, 69, 73, 77, 81, 85, 181, 185]
 values = [tsl, tsf, src, rec, cmp, off, zrec, zsrc, gscal, 
           xsrc, ysrc, xrec, yrec, cmpx, cmpy]
 
-mng.edit_trace_header(data1, bytes, values)
-mng.edit_trace_header(data2, bytes, values)
+mng.edit_trace_header(data, bytes, values)
 
 
