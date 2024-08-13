@@ -183,7 +183,7 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
     
     Nh = len(offset)
     #Np = 55        # Curvatures
-    Np = 101
+    Np = len(offset)
     # curvs = np.linspace(-0.1,.2,Np)
     curvs = np.linspace(1000,3000,Np)
     for i in range(nt):

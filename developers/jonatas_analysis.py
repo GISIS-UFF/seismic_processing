@@ -3,6 +3,7 @@ path.append("../")
 
 import toolbox.visualizing as view
 from toolbox import managing as mng
+from toolbox import filtering
 
 import numpy as np
 import segyio as sgy
@@ -107,4 +108,4 @@ data2 = mng.import_sgy_file("../data/seismic_radon_test.sgy")
 style = 'hyperbolic'
 key = 'cmp'
 index = 1
-view.radon_transform2(data2, key, index, style)
+filtering.radon_transform2(data2, key, index, style)
