@@ -556,11 +556,11 @@ def semblance (data: sgy.SegyFile, **kwargs):
 
     index: CMP gather index. - First Complete CMP as Default
     
-    vmin: minimum velocity in semblance. - 500.0 ms as Default
+    vmin: minimum velocity in semblance. - 300.0 ms as Default
     
-    vmax: maximum velocity in semblance. - 5000.0 ms as Default
+    vmax: maximum velocity in semblance. - 6000.0 ms as Default
 
-    dv: velocity variation in semblance. - 250.0 ms as Default
+    dv: velocity variation in semblance. - 101.0 ms as Default
 
 
     ### Examples:
