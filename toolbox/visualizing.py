@@ -383,8 +383,9 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
 
     style = kwargs.get("style").lower() if "style" in kwargs else "parabolic"
 
-    vmin = kwargs.get("vmin") if "vmin" in kwargs else 1500
-    vmax = kwargs.get("vmax") if "vmax" in kwargs else 6000
+    use = kwargs.get("use") if "use" in kwargs else 0 # adicionado para identificar o uso da função para visualização do semblance
+    vmin = kwargs.get("vmin") if "vmin" in kwargs else 300 # alterado
+    vmax = kwargs.get("vmax") if "vmax" in kwargs else 6000 # alterado
     nvel = kwargs.get("nvel") if "nvel" in kwargs else 101
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
@@ -424,7 +425,11 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
             x = np.arange(len(traces))[mask]
             t = np.array(curvature[mask]/dt, dtype = int)
     
-            radon[i,j] = np.sum(seismic[t,x])             
+            if use == 1:
+                radon[i,j] += np.sum(np.abs(seismic[t,x]))**2
+
+            else:
+                radon[i,j] = np.sum(seismic[t,x])             
 
 
     scale1 = 2*np.std(seismic)
@@ -432,15 +437,28 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
 
     fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5)) 
 
-    ax[0].imshow(seismic, aspect = 'auto', cmap = 'Greys', vmin = -scale1, vmax = scale1) 
+    im1 = ax[0].imshow(seismic, aspect = 'auto', cmap = 'Greys', vmin = -scale1, vmax = scale1) 
+    ax[0].set_xlabel('Trace', fontsize=15) 
+    ax[0].set_ylabel('Time [s]', fontsize=15)
 
-    ax[1].imshow(radon, aspect = 'auto', cmap = 'jet', vmin = -scale2, vmax = scale2)
+    cbar1 = fig.colorbar(im1, ax=ax[0])
+    cbar1.set_label("Amplitude", fontsize=10)
 
-    # ax.set_xlabel('Time [s]', fontsize=15) 
-    # ax.set_ylabel('Velocity [m/s]', fontsize=15)
+    if use == 1:
+        ylim = ax[0].get_ylim()
+        # im2 = ax[1].imshow(radon, aspect='auto', cmap='jet', vmin=-scale2, vmax=scale2)
+        im2 = ax[1].imshow(radon, aspect='auto', cmap='jet', vmin=-scale2, vmax=scale2, extent=[vmin, vmax, ylim[0], ylim[1]])
+        ax[1].set_xlabel('Velocity [m/s]', fontsize=15) 
+        ax[1].set_ylabel('Time [s]', fontsize=15)
 
-    # cbar = fig.colorbar(img, ax=ax) 
-    # cbar.set_label("Semblance", fontsize=15)
+        cbar2 = fig.colorbar(im2, ax=ax[1])
+        cbar2.set_label("Semblance", fontsize=10)
+        fig.suptitle(f'Velocity Semblance - Curent CMP: {index}', fontsize=16)
+
+    else:
+        im2 = ax[1].imshow(radon, aspect = 'auto', cmap = 'jet', vmin = -scale2, vmax = scale2)
+    
+    
 
     fig.tight_layout() 
     plt.show()
@@ -525,3 +543,31 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
         
     fig.tight_layout()
     plt.show()    
+
+def semblance (data: sgy.SegyFile, **kwargs):
+    """
+    Plot the velocity semblance of the according CMP Gather
+
+    ### Mandatory Parameters:
+
+    data: segyio object.
+
+    ### Other Parameters
+
+    index: CMP gather index. - First Complete CMP as Default
+    
+    vmin: minimum velocity in semblance. - 500.0 ms as Default
+    
+    vmax: maximum velocity in semblance. - 5000.0 ms as Default
+
+    dv: velocity variation in semblance. - 250.0 ms as Default
+
+
+    ### Examples:
+    
+    >>> view.semblance(data)
+    >>> view.semblance(data, index=index, vmax=vmax)
+    
+    """
+    radon_transform(data, style="hyperbolic", use=1, **kwargs)
+
