@@ -8,13 +8,15 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     '''
     Plot a prestack seismic gather according to a specific header keyword.
 
-    ### Parameters:        
-    
+    ### Mandatory Parameters:
+
     data: segyio object.
 
-    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    ### Other Parameters:
+
+    key: header keyword options -> ["src", "rec", "off", "cmp"] - "src" as default
     
-    index: integer that select a common gather.  
+    index: integer that select a common gather. -  ["src", "rec", "off", "cmp"] plots first index and "cmp" plots the first complet CMP as default
         
     ### Examples:
 
@@ -23,14 +25,21 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     >>> view.gather(data, key = "rec", index = 789) # plots rec index 789
     >>> view.gather(data, key = "cmp", index = 512) # plots cmp index 512
     '''    
-
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+
+    byte = mng.__keywords.get(key)
+
+    if key == "cmp":
+        _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+
+        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+
+        index = kwargs.get("index") if "index" in kwargs else complete_cmp_indexes[0]
+    else: 
+        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
-
-    byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
