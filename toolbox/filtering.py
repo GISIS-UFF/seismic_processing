@@ -77,7 +77,7 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
         return m
             
     @jit(nopython=True)
-    def __radon_forward(m,Nt,dt,Nh,h,Np,p,href):
+    def __radon_forward(m, Nt,dt,Nh,h,Np,p,href):
 
     # Forward Time-domain Parabolic Radon Transform
 
@@ -103,7 +103,7 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
         return d
         
 
-    def __radon_cg(d,m0,Nt,dt,Nh,h,Np,p,href,Niter):
+    def __radon_cg(d,Nt,dt,Nh,h,Np,p,href,Niter):
             
     # LS Radon transform. Finds the Radon coefficients by minimizing
     # ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
@@ -111,7 +111,9 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
     # flight
 
     # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
+        #m = np.zeros((nt,Np))
 
+        m0 = np.zeros((nt,Np))
         m = m0  
         
         s = d-__radon_forward(m,Nt,dt,Nh,h,Np,p,href) # d - Lm
@@ -135,19 +137,6 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
             
         return m
     
-#     def __ricker(dt,f0):    
-         
-# #Ricker wavelet of central frequency f0 sampled every dt seconds
-
-# # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
-
-#         nw = 2.5/f0/dt
-#         nw = 2*int(nw/2)
-#         nc = int(nw/2)
-#         a = f0*dt*3.14159265359
-#         n = a*np.arange(-nc,nc)
-#         b = n**2
-#         return (1-2*b)*np.exp(-b)
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
@@ -155,8 +144,8 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
     byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
-    offset = data.attributes(37)[traces] / data.attributes(69)[traces]
-
+    offset = data.attributes(37)[:] / data.attributes(69)[:]
+    print('offset = ', offset)
 
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
@@ -164,56 +153,29 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
     seismic = data.trace.raw[:].T
     seismic = seismic[:, traces]
     
-    # sx = data.attributes(73)[traces] / data.attributes(71)[traces]
-    # sy = data.attributes(77)[traces] / data.attributes(71)[traces]    
-    # sz = data.attributes(45)[traces] / data.attributes(71)[traces]
-
-    # rx = data.attributes(81)[traces] / data.attributes(69)[traces]
-    # ry = data.attributes(85)[traces] / data.attributes(69)[traces]    
-    # rz = data.attributes(41)[traces] / data.attributes(69)[traces]
-    
-    # distance = np.sqrt((sx - rx)**2 + (sy - ry)**2 + (sz - rz)**2)
     times = np.arange(nt) * dt
-    nx = len(traces)
 
-    h = offset  # offset
+    h = offset      # offset
     
-    # dh = np.median(np.abs(distance[1:] - distance[:-1])) 
-    dh = 25
     
     Nh = len(offset)
-    #Np = 55        # Curvatures
-    Np = len(offset)
-    # curvs = np.linspace(-0.1,.2,Np)
-    curvs = np.linspace(1000,3000,Np)
+    Np = 55        # Curvatures
+
+    curvs = np.linspace(1000, 3000,Np)
     for i in range(nt):
         for j in range(Np):
             p = np.sqrt(times[i]**2 + (offset/curvs[j])**2) 
-    
-    #h = np.linspace(0,(Nh-1)*dh,Nh)
 
     m = np.zeros((nt,Np))
 
-    m0 = np.zeros((nt,Np))
-    #f0 = 14
+    # href = h[-1]
+    href = 8000
 
-    # wavelet = __ricker(dt,f0)
-
-    href = h[Nh-1]
-
-    # m[40:40+Nw,20]=wavelet
-    # m[90:90+Nw,24]=-wavelet
-    # m[95:95+Nw,14]=-wavelet
-    # m[15:15+Nw,4]=wavelet
-
-    # m[75:75+Nw,12]=-wavelet
-
-    m = __radon_cg(seismic,m0,nt,dt,Nh,h,Np,p,href,10)  # Compute m via inversion using Conjugate Gradients 
-    dp = __radon_forward(m,nt,dt,Nh,h,Np,p,href)  # Predict data from inverted m
+    m = __radon_cg(seismic,nt,dt,Nh,h,Np,p,href,10)  # Compute m via inversion using Conjugate Gradients 
+    dp = __radon_forward(m, nt,dt,Nh,h,Np,p,href)  # Predict data from inverted m
     
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
     xlab = traces[xloc]
-    print('traces = ', traces)
     tloc = np.linspace(0, nt-1, 11, dtype = int)
     tlab = np.around(tloc*dt, decimals = 1)
     
