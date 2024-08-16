@@ -10,3 +10,12 @@ This repository aims to consolidate great programming practices for undergraduat
 - Davi M L Melonio
 - Jonatas O Araujo
 - Luciana A Rios
+
+
+## 📖 Dependencies
+
+Execute this command to install the required libraries necessary to run the program:
+
+```
+$ python3 -m pip install -r requirements.txt
+```
