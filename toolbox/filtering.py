@@ -107,7 +107,7 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
 
     @jit(nopython=True)
 
-    def __radon_adjoint(d,Nt,dt,Nh,h,Np,p,href):
+    def __radon_adjoint(d,Nt,dt,Nh,offset,Np,curvature,href):
 
     # Adjoint Time-domain Parabolic Radon Operator
 
@@ -126,7 +126,7 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
         for itau in range(0,Nt):
             for ih in range(0,Nh):
                 for ip in range(0,Np):
-                    t = (itau)*dt + p[ip]*(h[ih]/href)**2
+                    t =np.sqrt((itau*dt)**2 + (curvature[ip]* (offset[ih]/href))**2)
                     it = int(t/dt)
                     if it<Nt:
                         if it>0:
@@ -135,7 +135,7 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
         return m
             
     @jit(nopython=True)
-    def __radon_forward(m, Nt,dt,Nh,h,Np,p,href):
+    def __radon_forward(m, Nt,dt,Nh,offset,Np,curvature,href):
 
     # Forward Time-domain Parabolic Radon Transform
 
@@ -153,7 +153,7 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
         for itau in range(0,Nt):
             for ih in range(0,Nh):
                 for ip in range(0,Np):
-                    t = (itau)*dt+p[ip]*(h[ih]/href)**2
+                    t =np.sqrt((itau*dt)**2 + (curvature[ip]* (offset[ih]/href))**2)
                     it=int(t/dt)
                     if it<Nt:
                         if it>=0:
@@ -161,7 +161,7 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
         return d
         
 
-    def __radon_cg(d,Nt,dt,Nh,h,Np,p,href,Niter):
+    def __radon_cg(d,nt,dt,Nh,offset,Np,curvature,href,Niter):
             
     # LS Radon transform. Finds the Radon coefficients by minimizing
     # ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
@@ -174,10 +174,10 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
         m0 = np.zeros((nt,Np))
         m = m0  
         
-        s = d-__radon_forward(m,Nt,dt,Nh,h,Np,p,href) # d - Lm
-        pp = __radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # pp = L's 
+        s = d-__radon_forward(m,nt,dt,Nh,offset,Np,curvature,href) # d - Lm
+        pp = __radon_adjoint(s,nt,dt,Nh,offset,Np,curvature,href)  # pp = L's 
         r = pp
-        q = __radon_forward(pp,Nt,dt,Nh,h,Np,p,href)
+        q = __radon_forward(pp,nt,dt,Nh,offset,Np,curvature,href)
         old = np.sum(np.sum(r*r))
         print("iter","  res")
         
@@ -185,19 +185,19 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
              alpha = np.sum(np.sum(r*r))/np.sum(np.sum(q*q))
              m +=  alpha*pp
              s -=  alpha*q
-             r = __radon_adjoint(s,Nt,dt,Nh,h,Np,p,href)  # r= L's
+             r = __radon_adjoint(s,nt,dt,Nh,offset,Np,curvature,href)  # r= L's
              new = np.sum(np.sum(r*r))
              print(k, new)
              beta = new/old
              old = new
              pp = r + beta*pp
-             q = __radon_forward(pp,Nt,dt,Nh,h,Np,p,href) # q=L pp
+             q = __radon_forward(pp,nt,dt,Nh,offset,Np,curvature,href) # q=L pp
             
         return m
     
 
     mng.__check_keyword(key)
-    mng.__check_index(data, key, index)
+    # mng.__check_index(data, key, index)
 
     byte = mng.__keywords.get(key)
 
@@ -212,9 +212,6 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
     seismic = seismic[:, traces]
     
     times = np.arange(nt) * dt
-
-    h = offset      # offset
-    
     
     Nh = len(offset)
     Np = 55        # Curvatures
@@ -222,15 +219,15 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
     curvs = np.linspace(1000, 3000,Np)
     for i in range(nt):
         for j in range(Np):
-            p = np.sqrt(times[i]**2 + (offset/curvs[j])**2) 
+            curvature = np.sqrt(times[i]**2 + (offset/curvs[j])**2) 
 
     m = np.zeros((nt,Np))
 
-    # href = h[-1]
+    # href = np.max(offset)
     href = 8000
 
-    m = __radon_cg(seismic,nt,dt,Nh,h,Np,p,href,10)  # Compute m via inversion using Conjugate Gradients 
-    dp = __radon_forward(m, nt,dt,Nh,h,Np,p,href)  # Predict data from inverted m
+    m = __radon_cg(seismic,nt,dt,Nh,offset,Np,curvature,href,10)  # Compute m via inversion using Conjugate Gradients 
+    dp = __radon_forward(m, nt,dt,Nh,offset,Np,curvature,href)  # Predict data from inverted m
     
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
     xlab = traces[xloc]
@@ -272,4 +269,3 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
     
     fig.tight_layout()
     plt.show()
-
