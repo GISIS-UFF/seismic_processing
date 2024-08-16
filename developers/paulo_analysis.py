@@ -11,11 +11,13 @@ data = mng.import_sgy_file(input_name)
 
 mng.show_trace_header(data)
 
-view.gather(data, key = "rec", index = 680)
-view.geometry(data, key = "rec", index = 680)
+view.gather(data, key = "cmp", index = 800)
+view.geometry(data, key = "cmp", index = 800)
 
-# view.fourier_fx_domain(data, key = "cmp", index = 800, trace_number = 50)
-# view.fourier_fk_domain(data, key = "cmp", index = 800)
+view.fourier_fx_domain(data, key = "cmp", index = 800, trace_number = 50)
+view.fourier_fk_domain(data, key = "cmp", index = 800)
+
+filt.fourier_fk_domain(data, key = "cmp", index = 800)
 
 # view.radon_transform(data, index = 800, style = "linear")
 # view.radon_transform(data, index = 800, style = "parabolic")
