@@ -239,7 +239,6 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
                             result[it, offset_index] += data[time_index, curvature_index]                
         return result
         
-    
     def __radon_cg(data, nt, dt, Nh, offsets, Np, curvature, href, iterations):
             
     # LS Radon transform. Finds the Radon coefficients by minimizing
@@ -273,7 +272,6 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
             
         return m
     
-
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
 
@@ -300,7 +298,6 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
             curvature = np.sqrt(times[i]**2 + (offset/curvs[j])**2) 
 
     m = np.zeros((nt,Np))
-
     href = np.max(offset) * 2
 
     m = __radon_cg(seismic, nt, dt, Nh, offset, Np, curvature, href, 10)  # Compute m via inversion using Conjugate Gradients 
