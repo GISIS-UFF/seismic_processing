@@ -208,12 +208,8 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
 
     # Adjoint Time-domain Parabolic Radon Operator
 
-    # d(nt,nh): data                             ##### seismic
     # dt      : sampling interval                ##### dt = data.attributes(117)[0][0] * 1e-6
-    # h(Nh)   : offset                           ##### offset = data.attributes(37)[:]
-    # p(Np)   : curvature of parabola
     # href    : reference offset
-    # Returns m(nt,np) the Radon coefficients 
 
     # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
 
@@ -252,7 +248,6 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
     # flight
 
     # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
-        #m = np.zeros((nt,Np))
 
         m0 = np.zeros((nt,Np))
         m = m0  
@@ -306,8 +301,7 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
 
     m = np.zeros((nt,Np))
 
-    # href = h[-1]
-    href = 8000
+    href = np.max(offset) * 2
 
     m = __radon_cg(seismic, nt, dt, Nh, offset, Np, curvature, href, 10)  # Compute m via inversion using Conjugate Gradients 
     dp = __radon_operator('forward', m, nt, dt, Nh, offset, Np, curvature, href)  # Predict data from inverted m
