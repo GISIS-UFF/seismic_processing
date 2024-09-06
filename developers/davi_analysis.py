@@ -1,7 +1,6 @@
 from sys import path
 import numpy as np
 import segyio as sgy
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.path import Path
@@ -11,68 +10,154 @@ path.append("../")
 from toolbox import managing as mng
 from toolbox import visualizing as view
 
-data_file = "../data/2D_Land_vibro_data_2ms/Line_001.sgy"
+data_file = "../data/overthrust_synthetic_seismic_data.sgy"
 
 data = mng.import_sgy_file(data_file)
 
-view.fourier_fk_domain(data)
+def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
 
-def fourier_fk_domain(data: sgy.SegyFile, angle: float) -> sgy.SegyFile:
     current_clicks = []
     polygons = []
     polygon_paths = []
+    masked_image = None
 
     def on_click(event):
-        global current_clicks
-        if event.inaxes:
+        nonlocal current_clicks
+        if event.inaxes == ax[1]:
             current_clicks.append((event.xdata, event.ydata))
-            ax.plot(event.xdata, event.ydata, 'ro')
+            ax[1].plot(event.xdata, event.ydata, 'ro')
             plt.draw()
 
             if len(current_clicks) >= 3:
-                for artist in ax.patches:
+                for artist in ax[1].patches + ax[1].lines:
                     artist.remove()
 
                 for polygon in polygons:
-                    ax.add_patch(polygon)
+                    ax[1].add_patch(polygon)
 
-                polygon = Polygon(current_clicks, closed=True, edgecolor='black', facecolor='cyan', alpha=0.5)
-                ax.add_patch(polygon)
+                polygon = Polygon(current_clicks, closed=True, edgecolor='black', facecolor='cyan', alpha=0.3)
+                ax[1].add_patch(polygon)
                 plt.draw()
 
     def on_key(event):
-        global current_clicks, polygons, polygon_paths
+        nonlocal current_clicks, polygons, polygon_paths
         if event.key == 'n':
             if len(current_clicks) >= 3:
-                polygon = Polygon(current_clicks, closed=True, edgecolor='black', facecolor='cyan', alpha=0.5)
+                polygon = Polygon(current_clicks, closed=True, edgecolor='black', facecolor='cyan', alpha=0.3)
                 polygons.append(polygon)
                 polygon_path = Path(current_clicks)
                 polygon_paths.append(polygon_path)
 
+                teste = np.abs(fk_seismic[mask,:][::-1])
+                gaussian_mask = np.zeros(teste.shape)
+
+                x, y = np.meshgrid(np.arange(teste.shape[1]), np.arange(teste.shape[0]))
+                xy = np.vstack((x.flatten(), y.flatten())).T
+
+                for polygon_path in polygon_paths:
+                    inside = polygon_path.contains_points(xy).reshape(gaussian_mask.shape)
+                    gaussian_mask[inside] = 1
+
+                gaussian_mask = gaussian_filter(gaussian_mask.astype(np.float32), sigma=7)
+
+                masked_image = np.abs(teste) * gaussian_mask
+
+                fig, ax = plt.subplots(figsize=(5, 5))
+                ax.imshow(masked_image, aspect="auto", cmap="jet")
+                ax.set_title('Filtered F-K', fontsize=15)
+
+                def on_close(event):
+                    polygons.clear()
+                    polygon_paths.clear()
+                    for artist in ax[1].patches + ax[1].lines:
+                        artist.remove()
+                    plt.draw()
+
+                fig.canvas.mpl_connect('close_event', on_close)
+
+                plt.show()
+
             current_clicks = []
 
-    fig, ax = plt.subplots()
-    ax.imshow(data, cmap='gray')
+    fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
+
+    key = kwargs.get("key") if "key" in kwargs else "src"
+    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0]
+
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
+
+    byte = mng.__keywords.get(key)
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+
+    seismic = data.trace.raw[:].T
+    seismic = seismic[:, traces]
+        
+    distance = data.attributes(37)[traces] / data.attributes(69)[traces]
+
+    nx = len(traces)
+    dh = np.median(np.abs(np.abs(distance[1:]) - np.abs(distance[:-1]))) 
+
+    fk_seismic = np.fft.fftshift(np.fft.fft2(seismic))
+
+    frequency = np.fft.fftshift(np.fft.fftfreq(nt, dt))
+    wavenumber = np.fft.fftshift(np.fft.fftfreq(nx, dh))
+
+    mask = np.logical_and(frequency >= 0.0, frequency <= fmax)
+
+    xloc = np.linspace(0, len(traces)-1, 5, dtype=int)
+    xlab = traces[xloc]
+
+    tloc = np.linspace(0, nt-1, 11, dtype=int)
+    tlab = np.around(tloc*dt, decimals=1)
+
+    floc = np.linspace(0, len(frequency[mask])-1, 11, dtype=int)
+    flab = np.around(np.ceil(frequency[mask][floc][::-1]), decimals=1)
+
+    kloc = np.linspace(0, len(wavenumber)-1, 5, dtype=int)
+    klab = np.around(wavenumber[kloc], decimals=3)
+
+    scale = 0.8 * np.std(seismic)
+    
+    fig, ax = plt.subplots(ncols=2, nrows=1, figsize=(10, 5))
+
+    im = ax[0].imshow(seismic, aspect="auto", cmap="Greys", vmin=-scale, vmax=scale)
+
+    ax[0].set_yticks(tloc)
+    ax[0].set_yticklabels(tlab)
+    ax[0].set_xticks(xloc)
+    ax[0].set_xticklabels(xlab)
+
+    ax[0].set_ylabel('Time [s]', fontsize=15)
+    ax[0].set_xlabel('Trace number', fontsize=15)
+
+    fk = ax[1].imshow(np.abs(fk_seismic[mask, :][::-1]), aspect="auto", cmap="jet")
+    
+    ax[1].set_yticks(floc)
+    ax[1].set_yticklabels(flab)
+
+    ax[1].set_xticks(kloc)
+    ax[1].set_xticklabels(klab)
+
+    ax[1].set_ylabel("Frequency [Hz]", fontsize=15)
+    ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]", fontsize=15)
+
+    ax[0].cbar = fig.colorbar(im, ax=ax[0])
+    ax[0].cbar.set_label("Amplitude", fontsize=15) 
+
+    ax[1].cbar = fig.colorbar(fk, ax=ax[1])
+    ax[1].cbar.set_label("Amplitude", fontsize=15) 
+    
     cid_click = fig.canvas.mpl_connect('button_press_event', on_click)
     cid_key = fig.canvas.mpl_connect('key_press_event', on_key)
+
+    fig.tight_layout()
     plt.show()
 
-    if polygon_paths:
-        mask = np.zeros(data.shape)
+    return masked_image
 
-        x, y = np.meshgrid(np.arange(data.shape[1]), np.arange(data.shape[0]))
-        xy = np.vstack((x.flatten(), y.flatten())).T
-
-        for polygon_path in polygon_paths:
-            inside = polygon_path.contains_points(xy).reshape(mask.shape)
-            mask[inside] = 1
-
-        mask = gaussian_filter(mask.astype(np.float32), sigma=7)
-
-        masked_image = data * mask
-
-        plt.figure()
-        plt.imshow(masked_image, cmap='gray')
-        plt.show()
-
-
+fourier_fk_domain(data)
