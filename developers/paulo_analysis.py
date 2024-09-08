@@ -94,7 +94,6 @@ def radon_forward(data, dt, times, offsets, velocities, style):
 
     return domain
 
-
 @nb.jit(nopython = True, parallel = True)
 def radon_adjoint(domain, dt, times, offsets, velocities, style):
 
@@ -132,8 +131,6 @@ def radon_adjoint(domain, dt, times, offsets, velocities, style):
         raise ValueError(f"Error: {style} style is not defined! Use a valid style: ['linear', 'parabolic', 'hyperbolic']")
 
     return data
-
-
 
 
 n_receivers = 320
@@ -198,27 +195,40 @@ data = radon_adjoint(domain, dt, t, x, v, "hyperbolic")
 
 difference = (seismogram - data)**2
 
-print(np.sum(difference))
+print(f"Absolute error summation: {np.sum(difference)}")
 
+plt.figure(1, figsize = (12,4))
 plt.subplot(131)
 plt.imshow(seismogram, aspect = "auto")
+plt.title("original data")
 
 plt.subplot(132)
 plt.imshow(radon_s, aspect = "auto")
+plt.title("Serial Radon forward")
 
 plt.subplot(133)
 plt.imshow(radon_p, aspect = "auto")
+plt.title("Parallel Radon forward")
 
-plt.show()
+plt.tight_layout()
 
 
-plt.subplot(131)
+plt.figure(2, figsize = (15,3.5))
+plt.subplot(141)
 plt.imshow(seismogram, aspect = "auto")
+plt.title("original data")
 
-plt.subplot(132)
+plt.subplot(142)
 plt.imshow(radon_p, aspect = "auto")
+plt.title("Radon forward")
 
-plt.subplot(133)
+plt.subplot(143)
+plt.imshow(data, aspect = "auto")
+plt.title("Radon adjoint")
+
+plt.subplot(144)
 plt.imshow(difference, aspect = "auto")
+plt.title("Data difference")
 
+plt.tight_layout()
 plt.show()
