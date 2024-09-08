@@ -1,11 +1,7 @@
 import sys; sys.path.append("../")
 
-from toolbox import managing as mng
-from toolbox import filtering as filt
-from toolbox import visualizing as view
-
 import numpy as np
-import segyio as sgy
+import numba as nb
 
 import matplotlib.pyplot as plt
 
@@ -27,7 +23,7 @@ def wavelet_generation(nt, dt, fmax):
         wavelet[n] = (1.0 - 2.0*arg)*np.exp(-arg);      
     return wavelet
 
-def radon_transform(gather, dt, times, offsets, velocities, style, operation):
+def radon_forward_s(data, dt, times, offsets, velocities, style):
 
     Nt = len(times)
     Nh = len(offsets)
@@ -55,51 +51,89 @@ def radon_transform(gather, dt, times, offsets, velocities, style, operation):
             mask = curvature <= (Nt-1)*dt
 
             t = np.array(curvature[mask]/dt, dtype = int)
-                        
-            domain[tind, mask, vind] = gather[t, offset_index[mask]] / Np
-            
-    if operation == "forward":
-        return np.sum(domain, axis = 1)
 
-    elif operation == "adjoint":
-        return np.sum(domain, axis = 2)
+            domain[tind, mask, vind] = data[t, offset_index[mask]]
+
+    return domain
+
+@nb.jit(nopython = True, parallel = True)
+def radon_forward(data, dt, times, offsets, velocities, style):
+
+    Nt = len(times)
+    Nh = len(offsets)
+    Np = len(velocities)
+
+    domain = np.zeros((Nt, Nh, Np))
+
+    if style == "linear":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = times[tind] + offsets[hind]/velocities[vind]                        
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        domain[tind, hind, vind] = data[int(curvature/dt), hind]           
+
+    elif style == "parabolic":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = times[tind] + (offsets[hind]/velocities[vind])**2
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        domain[tind, hind, vind] = data[int(curvature/dt), hind]           
+                
+    elif style == "hyperbolic":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = np.sqrt(times[tind]**2 + (offsets[hind]/velocities[vind])**2)            
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        domain[tind, hind, vind] = data[int(curvature/dt), hind]           
 
     else:
-        raise ValueError(f"Error: {operation} operation is not defined! Use a valid operation: ['forward', 'adjoint']")
+        raise ValueError(f"Error: {style} style is not defined! Use a valid style: ['linear', 'parabolic', 'hyperbolic']")
 
-# def radon_cg(data, nt, dt, Nh, offsets, Np, curvature, href, iterations):
-        
-# # LS Radon transform. Finds the Radon coefficients by minimizing
-# # ||L m - d||_2^2 where L is the forward Parabolic Radon Operator.
-# # The solution is found via CGLS with operators L and L^T applied on the
-# # flight
+    return domain
 
-# # M D Sacchi, 2015,  Email: msacchi@ualberta.ca
-#     #m = np.zeros((nt,Np))
 
-#     m0 = np.zeros((nt,Np))
-#     m = m0  
+@nb.jit(nopython = True, parallel = True)
+def radon_adjoint(domain, dt, times, offsets, velocities, style):
+
+    Nt = len(times)
+    Nh = len(offsets)
+    Np = len(velocities)
+
+    data = np.zeros((Nt, Nh))
+
+    if style == "linear":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = times[tind] + offsets[hind]/velocities[vind]        
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        data[int(curvature/dt), hind] = domain[tind, hind, vind]           
+                
+    elif style == "parabolic":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = times[tind] + (offsets[hind]/velocities[vind])**2
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        data[int(curvature/dt), hind] = domain[tind, hind, vind]           
+                
+    elif style == "hyperbolic":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = np.sqrt(times[tind]**2 + (offsets[hind]/velocities[vind])**2)            
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        data[int(curvature/dt), hind] = domain[tind, hind, vind]           
     
-#     s = data - __radon_operator('forward', m, nt, dt, Nh, offsets, Np, curvature, href) # d - Lm
-#     pp = __radon_operator('adjoint', s, nt, dt, Nh, offsets, Np, curvature, href)  # pp = L's 
-#     r = pp
-#     q = __radon_operator('forward',pp, nt, dt, Nh, offsets, Np, curvature, href)
-#     old = np.sum(np.sum(r*r))
-#     print("iter","  res")
-    
-#     for k in range(0,iterations):
-#             alpha = np.sum(np.sum(r*r))/np.sum(np.sum(q*q))
-#             m +=  alpha*pp
-#             s -=  alpha*q
-#             r = __radon_operator('adjoint',s, nt, dt, Nh, offsets, Np, curvature, href)  # r= L's
-#             new = np.sum(np.sum(r*r))
-#             print(k, new)
-#             beta = new/old
-#             old = new
-#             pp = r + beta*pp
-#             q = __radon_operator('forward', pp , nt, dt, Nh, offsets, Np, curvature, href) # q=L pp
-        
-#     return m
+    else:
+        raise ValueError(f"Error: {style} style is not defined! Use a valid style: ['linear', 'parabolic', 'hyperbolic']")
+
+    return data
+
+
 
 
 n_receivers = 320
@@ -110,46 +144,81 @@ fmax = 30.0
 dx = 25
 dt = 1e-3
 
-nt = int(total_time / dt) + 1
-nx = int(n_receivers / 2) + 1
+Nt = int(total_time / dt) + 1
+Nh = int(n_receivers / 2) + 1
 
 z = np.array([500, 1000, 1000, 1000])
 v = np.array([1500, 1650, 2000, 3000, 4500])
 
-x = np.linspace(0, nx*dx, nx)
+offsets = np.linspace(0, Nh*dx, Nh)
 
-reflections = analytical_reflections(v, z, x)
+reflections = analytical_reflections(v, z, offsets)
 
-seismogram = np.zeros((nt, nx), dtype = np.float32)
-wavelet = wavelet_generation(nt, dt, fmax)
+seismogram = np.zeros((Nt, Nh), dtype = np.float32)
+wavelet = wavelet_generation(Nt, dt, fmax)
 
-for j in range(nx):
+for j in range(Nh):
     for i in range(len(z)):
         indt = int(reflections[i, j] / dt)
         seismogram[indt, j] = 1.0
 
     seismogram[:,j] = np.convolve(seismogram[:, j], wavelet, "same")
 
-Nt = 5001
-Nh = 160
 Np = 101
 
-dt = 1e-3
-
-x = np.linspace(0, nx*dx, nx)
+x = offsets.copy()
 v = np.linspace(1000, 3000, Np) 
 t = np.arange(Nt) * dt
 
-m = radon_transform(seismogram, dt, t, x, v, "hyperbolic", "forward")
-d = radon_transform(seismogram, dt, t, x, v, "hyperbolic", "adjoint")
+
+### Performance test
+
+from time import time
+
+ti = time()
+domain = radon_forward_s(seismogram, dt, t, x, v, "hyperbolic")
+tf = time()
+
+print(f"radon forward serial: {tf - ti} s")
+
+radon_s = np.sum(domain, axis = 1)
+
+ti = time()
+domain = radon_forward(seismogram, dt, t, x, v, "hyperbolic")
+tf = time()
+
+print(f"radon forward parallel: {tf - ti} s")
+
+radon_p = np.sum(domain, axis = 1)
+
+### Accuracy test
+
+domain = radon_forward(seismogram, dt, t, x, v, "hyperbolic")
+data = radon_adjoint(domain, dt, t, x, v, "hyperbolic")
+
+difference = (seismogram - data)**2
+
+print(np.sum(difference))
 
 plt.subplot(131)
 plt.imshow(seismogram, aspect = "auto")
 
 plt.subplot(132)
-plt.imshow(m, aspect = "auto")
+plt.imshow(radon_s, aspect = "auto")
 
 plt.subplot(133)
-plt.imshow(d, aspect = "auto")
+plt.imshow(radon_p, aspect = "auto")
+
+plt.show()
+
+
+plt.subplot(131)
+plt.imshow(seismogram, aspect = "auto")
+
+plt.subplot(132)
+plt.imshow(radon_p, aspect = "auto")
+
+plt.subplot(133)
+plt.imshow(difference, aspect = "auto")
 
 plt.show()
