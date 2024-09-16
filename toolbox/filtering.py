@@ -349,3 +349,80 @@ def radon_transform2(data : sgy.SegyFile, key : str, index : int, style : str) -
     
     fig.tight_layout()
     plt.show()
+    
+    
+def mute(data : sgy.SegyFile, velocity, t0, **kwargs) -> None:
+
+    key = kwargs.get("key") if "key" in kwargs else "src"
+
+    byte = mng.__keywords.get(key)
+
+    if key == "cmp":
+        _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+
+        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+
+        index = kwargs.get("index") if "index" in kwargs else complete_cmp_indexes[0]
+    else:
+        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0]
+
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+    offset = data.attributes(37)[traces] / data.attributes(69)[traces]
+
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+
+    t = t0 + np.abs(offset / velocity)
+
+    seismic = data.trace.raw[:].T
+    seismic = seismic[:, traces]
+    
+    seismic_mute = np.copy(seismic)
+
+    for i in range(len(offset)):
+        limit = int(t[i] / dt)
+        seismic_mute[:limit, i] = 0  
+
+    scale = 0.8*np.std(seismic)
+
+    fig, ax = plt.subplots(ncols = 3, nrows = 1, figsize = (15, 5))
+    
+    xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
+    xlab = traces[xloc]
+    tloc = np.linspace(0, nt, 11, dtype = int)
+    tlab = np.around(tloc * dt, decimals = 1)
+    
+    
+    img = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    ax[0].set_xticks(xloc)
+    ax[0].set_xticklabels(xlab)
+    ax[0].set_yticks(tloc)
+    ax[0].set_yticklabels(tlab)
+    ax[0].set_ylabel('Time [s]', fontsize = 15)
+    ax[0].set_xlabel('Trace number', fontsize = 15)
+
+    # cbar = fig.colorbar(img, ax = ax)
+    # cbar.set_label("Amplitude", fontsize = 15)
+    
+    ax[1].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale, extent=[0, len(traces), nt*dt,0])
+    ax[1].plot(np.arange(len(offset)), t, 'or')
+    ax[1].set_xticks(xloc)
+    ax[1].set_xticklabels(xlab)
+    # ax[1].set_yticks(tloc)
+    # ax[1].set_yticklabels(tlab)
+    ax[1].set_ylabel('Time [s]', fontsize = 15)
+    ax[1].set_xlabel('Trace number', fontsize = 15)
+
+    ax[2].imshow(seismic_mute, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    ax[2].set_xticks(xloc)
+    ax[2].set_xticklabels(xlab)
+    ax[2].set_yticks(tloc)
+    ax[2].set_yticklabels(tlab)
+    ax[2].set_ylabel('Time [s]', fontsize = 15)
+    ax[2].set_xlabel('Trace number', fontsize = 15)
+
+    fig.tight_layout()
+    plt.show()
