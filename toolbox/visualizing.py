@@ -411,7 +411,7 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
     curvs = np.linspace(vmin, vmax, nvel)
 
     radon = np.zeros((nt, nvel))
-
+    
     for i in range(nt):
         for j in range(nvel):
 
@@ -440,9 +440,14 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
             else:
                 radon[i,j] = np.sum(seismic[t,x])             
 
+    amplifier = np.gradient(radon, axis=1)
+    alpha = 3
+    radon_amplified = radon + amplifier * alpha
 
     scale1 = 2*np.std(seismic)
     scale2 = 2*np.std(radon)
+    scale3 = 2*np.std(radon_amplified)
+    
 
     fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5)) 
 
@@ -456,7 +461,7 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
     if use == 1:
         ylim = ax[0].get_ylim()
         # im2 = ax[1].imshow(radon, aspect='auto', cmap='jet', vmin=-scale2, vmax=scale2)
-        im2 = ax[1].imshow(radon, aspect='auto', cmap='jet', vmin=-scale2, vmax=scale2, extent=[vmin, vmax, ylim[0], ylim[1]])
+        im2 = ax[1].imshow(radon_amplified, aspect='auto', cmap='jet', vmin=0, vmax=scale3, extent=[vmin, vmax, ylim[0], ylim[1]])
         ax[1].set_xlabel('Velocity [m/s]', fontsize=15) 
         ax[1].set_ylabel('Time [s]', fontsize=15)
 
