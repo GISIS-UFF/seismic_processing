@@ -370,23 +370,25 @@ def mute(data : sgy.SegyFile, velocity, t0, **kwargs) -> None:
     mng.__check_index(data, key, index)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
-    offset = data.attributes(37)[traces] / data.attributes(69)[traces]
-
+    #offset = data.attributes(37)[traces] / data.attributes(69)[traces]
+    offset = np.arange(len(traces)) * 15
+   
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
 
-    t = t0 + np.abs(offset / velocity)
+    t = t0 + np.abs((offset) / velocity)
 
     seismic = data.trace.raw[:].T
     seismic = seismic[:, traces]
     
     seismic_mute = np.copy(seismic)
 
-    for i in range(len(offset)):
+    for i in range(int(len(offset))):
         limit = int(t[i] / dt)
         seismic_mute[:limit, i] = 0  
 
     scale = 0.8*np.std(seismic)
+    scale_mute = 0.8*np.std(seismic_mute)
 
     fig, ax = plt.subplots(ncols = 3, nrows = 1, figsize = (15, 5))
     
@@ -394,7 +396,6 @@ def mute(data : sgy.SegyFile, velocity, t0, **kwargs) -> None:
     xlab = traces[xloc]
     tloc = np.linspace(0, nt, 11, dtype = int)
     tlab = np.around(tloc * dt, decimals = 1)
-    
     
     img = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
     ax[0].set_xticks(xloc)
@@ -409,6 +410,8 @@ def mute(data : sgy.SegyFile, velocity, t0, **kwargs) -> None:
     
     ax[1].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale, extent=[0, len(traces), nt*dt,0])
     ax[1].plot(np.arange(len(offset)), t, 'or')
+    #ax[1].plot(offset, t, 'red')
+
     ax[1].set_xticks(xloc)
     ax[1].set_xticklabels(xlab)
     # ax[1].set_yticks(tloc)
@@ -416,7 +419,7 @@ def mute(data : sgy.SegyFile, velocity, t0, **kwargs) -> None:
     ax[1].set_ylabel('Time [s]', fontsize = 15)
     ax[1].set_xlabel('Trace number', fontsize = 15)
 
-    ax[2].imshow(seismic_mute, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    ax[2].imshow(seismic_mute, aspect = "auto", cmap = "Greys", vmin = -scale_mute, vmax = scale_mute)
     ax[2].set_xticks(xloc)
     ax[2].set_xticklabels(xlab)
     ax[2].set_yticks(tloc)
