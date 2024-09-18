@@ -77,21 +77,17 @@ def radon_adjoint(domain, dt, times, offsets, velocities, style):
 
     return data
 
-def fourier_fx_domain(input : sgy.SegyFile, **kwargs) -> sgy.SegyFile:
+def fourier_fx_domain(data_input : sgy.SegyFile, **kwargs) -> sgy.SegyFile:
     '''
     Fourier 1D bandpass filtering. This function apply this filter along all data traces, 
     exporting and returning a new data filtered. 
     
     ### Parameters:        
     
-    data: segyio object.
+    data_input: segyio object.
 
     ### Optional parameters:
     
-    key: header keyword options -> ['src', 'rec', 'off', 'cmp']
-    
-    index: integer that select a common gather.  
-
     fmin: minimum frequency.    
     
     fmax: maximum frequency.    
@@ -100,29 +96,28 @@ def fourier_fx_domain(input : sgy.SegyFile, **kwargs) -> sgy.SegyFile:
 
     ### Returns:
 
-    output: segyio object.
+    data_output: segyio object.
 
     ### Examples:
 
-    >>> filt.fourier_fx_domain(data, fmax = 200)               # plots first shot             
-    >>> filt.fourier_fx_domain(data, key = "rec", index = 789) # plots rec index 789  
-    >>> filt.fourier_fx_domain(data, key = "cmp", index = 512) # plots cmp index 512
+    >>> filt.fourier_fx_domain(data, fmax = 200)
+    >>> filt.fourier_fx_domain(data, fmin = 10, fmax = 100)            
     '''    
 
     fmin = kwargs.get("fmin") if "fmin" in kwargs else 0.0
     fmax = kwargs.get("fmax") if "fmax" in kwargs else 50.0
 
-    output_name = kwargs.get("output_name") if "output_name" in kwargs else f"data_filtered_{fmin}-{fmax}Hz.sgy"
+    output_name = kwargs.get("output_name") if "output_name" in kwargs else f"data_bandpass.sgy"
 
     order = 5.0
 
-    dt = input.attributes(117)[0][0] * 1e-6
+    dt = data_input.attributes(117)[0][0] * 1e-6
 
-    seismic_input = input.trace.raw[:].T
+    seismic_input = data_input.trace.raw[:].T
 
     seismic_bandpass = np.zeros_like(seismic_input)
 
-    for i in range(input.tracecount):
+    for i in range(data_input.tracecount):
 
         b, a = sc.signal.butter(order, [fmin, fmax], fs = 1/dt, btype = 'band')
 
@@ -130,109 +125,90 @@ def fourier_fx_domain(input : sgy.SegyFile, **kwargs) -> sgy.SegyFile:
 
     sgy.tools.from_array2D(output_name, seismic_bandpass.T)
     
-    output = sgy.open(output_name, "r+", ignore_geometry = True)
-    output.header = input.header
+    data_output = sgy.open(output_name, "r+", ignore_geometry = True)
+    data_output.header = data_input.header
     
-    return output
+    return data_output
 
 def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
-    '''
-    Plot the amplitude spectra of each trace in gather according to a specific header keyword.
-    
-    ### Parameters:        
-    
-    data: segyio object.
+    pass
+    # fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
 
-    key: header keyword options -> ["src", "rec", "cmp"]
-    
-    index: integer that select a common gather.  
+    # key = kwargs.get("key") if "key" in kwargs else "src"
+    # index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
-    fmax: maximum frequency to visualize    
-    
-    ### Examples:
+    # mng.__check_keyword(key)
+    # mng.__check_index(data, key, index)
 
-    >>> view.fourier_fx_domain(data, fmax = 200)               # plots first shot             
-    >>> view.fourier_fx_domain(data, key = "rec", index = 789) # plots rec index 789  
-    >>> view.fourier_fx_domain(data, key = "cmp", index = 512) # plots cmp index 512
-    '''    
+    # byte = mng.__keywords.get(key)
 
-    fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
+    # traces = np.where(data.attributes(byte)[:] == index)[0]
 
-    key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+    # nt = data.attributes(115)[0][0]
+    # dt = data.attributes(117)[0][0] * 1e-6
 
-    mng.__check_keyword(key)
-    mng.__check_index(data, key, index)
-
-    byte = mng.__keywords.get(key)
-
-    traces = np.where(data.attributes(byte)[:] == index)[0]
-
-    nt = data.attributes(115)[0][0]
-    dt = data.attributes(117)[0][0] * 1e-6
-
-    seismic = data.trace.raw[:].T
-    seismic = seismic[:, traces]
+    # seismic = data.trace.raw[:].T
+    # seismic = seismic[:, traces]
         
-    distance = data.attributes(37)[traces] / data.attributes(69)[traces]
+    # distance = data.attributes(37)[traces] / data.attributes(69)[traces]
 
-    nx = len(traces)
-    dh = np.median(np.abs(np.abs(distance[1:]) - np.abs(distance[:-1]))) 
+    # nx = len(traces)
+    # dh = np.median(np.abs(np.abs(distance[1:]) - np.abs(distance[:-1]))) 
 
-    fk_seismic = np.fft.fftshift(np.fft.fft2(seismic))
+    # fk_seismic = np.fft.fftshift(np.fft.fft2(seismic))
 
-    frequency = np.fft.fftshift(np.fft.fftfreq(nt, dt))
-    wavenumber = np.fft.fftshift(np.fft.fftfreq(nx, dh))
+    # frequency = np.fft.fftshift(np.fft.fftfreq(nt, dt))
+    # wavenumber = np.fft.fftshift(np.fft.fftfreq(nx, dh))
 
-    mask = np.logical_and(frequency >= 0.0, frequency <= fmax)
+    # mask = np.logical_and(frequency >= 0.0, frequency <= fmax)
 
-    xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
-    xlab = traces[xloc]
+    # xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
+    # xlab = traces[xloc]
 
-    tloc = np.linspace(0, nt-1, 11, dtype = int)
-    tlab = np.around(tloc*dt, decimals = 1)
+    # tloc = np.linspace(0, nt-1, 11, dtype = int)
+    # tlab = np.around(tloc*dt, decimals = 1)
 
-    floc = np.linspace(0, len(frequency[mask])-1, 11, dtype = int)
-    flab = np.around(np.ceil(frequency[mask][floc][::-1]), decimals = 1)
+    # floc = np.linspace(0, len(frequency[mask])-1, 11, dtype = int)
+    # flab = np.around(np.ceil(frequency[mask][floc][::-1]), decimals = 1)
 
-    kloc = np.linspace(0, len(wavenumber)-1, 5, dtype = int)
-    klab = np.around(wavenumber[kloc], decimals = 3)
+    # kloc = np.linspace(0, len(wavenumber)-1, 5, dtype = int)
+    # klab = np.around(wavenumber[kloc], decimals = 3)
 
-    scale = 0.8*np.std(seismic)
+    # scale = 0.8*np.std(seismic)
     
-    fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5))
+    # fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5))
 
-    im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
+    # im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
-    ax[0].set_yticks(tloc)
-    ax[0].set_yticklabels(tlab)
-    ax[0].set_xticks(xloc)
-    ax[0].set_xticklabels(xlab)
+    # ax[0].set_yticks(tloc)
+    # ax[0].set_yticklabels(tlab)
+    # ax[0].set_xticks(xloc)
+    # ax[0].set_xticklabels(xlab)
 
-    ax[0].set_ylabel('Time [s]', fontsize = 15)
-    ax[0].set_xlabel('Trace number', fontsize = 15)
+    # ax[0].set_ylabel('Time [s]', fontsize = 15)
+    # ax[0].set_xlabel('Trace number', fontsize = 15)
 
-    fk = ax[1].imshow(np.abs(fk_seismic[mask,:][::-1]), aspect = "auto", cmap = "jet")
+    # fk = ax[1].imshow(np.abs(fk_seismic[mask,:][::-1]), aspect = "auto", cmap = "jet")
     
-    ax[1].set_yticks(floc)
-    ax[1].set_yticklabels(flab)
+    # ax[1].set_yticks(floc)
+    # ax[1].set_yticklabels(flab)
 
-    ax[1].set_xticks(kloc)
-    ax[1].set_xticklabels(klab)
+    # ax[1].set_xticks(kloc)
+    # ax[1].set_xticklabels(klab)
 
-    ax[1].set_ylabel("Frequency [Hz]", fontsize = 15)
-    ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]", fontsize = 15)
+    # ax[1].set_ylabel("Frequency [Hz]", fontsize = 15)
+    # ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]", fontsize = 15)
 
-    ax[1].set_ylabel("Frequency [Hz]")
+    # ax[1].set_ylabel("Frequency [Hz]")
 
-    ax[0].cbar = fig.colorbar(im, ax = ax[0])
-    ax[0].cbar.set_label("Amplitude", fontsize = 15) 
+    # ax[0].cbar = fig.colorbar(im, ax = ax[0])
+    # ax[0].cbar.set_label("Amplitude", fontsize = 15) 
 
-    ax[1].cbar = fig.colorbar(fk, ax = ax[1])
-    ax[1].cbar.set_label("Amplitude", fontsize = 15) 
+    # ax[1].cbar = fig.colorbar(fk, ax = ax[1])
+    # ax[1].cbar.set_label("Amplitude", fontsize = 15) 
     
-    fig.tight_layout()
-    plt.show()
+    # fig.tight_layout()
+    # plt.show()
 
     # current_clicks = []
     # polygons = []
@@ -291,81 +267,52 @@ def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
     #     plt.imshow(masked_image, cmap='gray')
     #     plt.show()
 
-def mute(data : sgy.SegyFile, velocity, t0, **kwargs) -> None:
-
-    key = kwargs.get("key") if "key" in kwargs else "src"
-
-    byte = mng.__keywords.get(key)
-
-    if key == "cmp":
-        _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
-
-        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
-
-        index = kwargs.get("index") if "index" in kwargs else complete_cmp_indexes[0]
-    else:
-        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0]
-
-    mng.__check_keyword(key)
-    mng.__check_index(data, key, index)
-
-    traces = np.where(data.attributes(byte)[:] == index)[0]
-    #offset = data.attributes(37)[traces] / data.attributes(69)[traces]
-    offset = np.arange(len(traces)) * 15
-   
-    nt = data.attributes(115)[0][0]
-    dt = data.attributes(117)[0][0] * 1e-6
-
-    t = t0 + np.abs((offset) / velocity)
-
-    seismic = data.trace.raw[:].T
-    seismic = seismic[:, traces]
+def mute(data_input : sgy.SegyFile, **kwargs) -> None:
+    '''
+    Fourier 1D bandpass filtering. This function apply this filter along all data traces, 
+    exporting and returning a new data filtered. 
     
-    seismic_mute = np.copy(seismic)
-
-    for i in range(int(len(offset))):
-        limit = int(t[i] / dt)
-        seismic_mute[:limit, i] = 0  
-
-    scale = 0.8*np.std(seismic)
-    scale_mute = 0.8*np.std(seismic_mute)
-
-    fig, ax = plt.subplots(ncols = 3, nrows = 1, figsize = (15, 5))
+    ### Parameters:        
     
-    xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
-    xlab = traces[xloc]
-    tloc = np.linspace(0, nt, 11, dtype = int)
-    tlab = np.around(tloc * dt, decimals = 1)
+    data: segyio object.
+
+    ### Optional parameters:
     
-    img = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
-    ax[0].set_xticks(xloc)
-    ax[0].set_xticklabels(xlab)
-    ax[0].set_yticks(tloc)
-    ax[0].set_yticklabels(tlab)
-    ax[0].set_ylabel('Time [s]', fontsize = 15)
-    ax[0].set_xlabel('Trace number', fontsize = 15)
-
-    # cbar = fig.colorbar(img, ax = ax)
-    # cbar.set_label("Amplitude", fontsize = 15)
+    time: initial time to delay the linear mute in seconds.    
     
-    ax[1].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale, extent=[0, len(traces), nt*dt,0])
-    ax[1].plot(np.arange(len(offset)), t, 'or')
-    #ax[1].plot(offset, t, 'red')
+    velocity: defines slope of the linear mute in meters per seconds.    
+    
+    output_name: path to export data results.    
 
-    ax[1].set_xticks(xloc)
-    ax[1].set_xticklabels(xlab)
-    # ax[1].set_yticks(tloc)
-    # ax[1].set_yticklabels(tlab)
-    ax[1].set_ylabel('Time [s]', fontsize = 15)
-    ax[1].set_xlabel('Trace number', fontsize = 15)
+    ### Returns:
 
-    ax[2].imshow(seismic_mute, aspect = "auto", cmap = "Greys", vmin = -scale_mute, vmax = scale_mute)
-    ax[2].set_xticks(xloc)
-    ax[2].set_xticklabels(xlab)
-    ax[2].set_yticks(tloc)
-    ax[2].set_yticklabels(tlab)
-    ax[2].set_ylabel('Time [s]', fontsize = 15)
-    ax[2].set_xlabel('Trace number', fontsize = 15)
+    output: segyio object.
 
-    fig.tight_layout()
-    plt.show()
+    ### Examples:
+
+    >>> filt.mute(data, velocity = 1000)
+    >>> filt.mute(data, time = 0.5, velocity = 1200)            
+    '''    
+
+    time = kwargs.get("time") if "time" in kwargs else 0.0 
+    velocity = kwargs.get("velocity") if "velocity" in kwargs else 1500.0
+    
+    output_name = kwargs.get("output_name") if "output_name" in kwargs else f"data_muted.sgy"
+
+    dt = data_input.attributes(117)[0][0] * 1e-6
+
+    seismic_input = data_input.trace.raw[:].T
+
+    offset = data_input.attributes(37)[:] / data_input.attributes(69)[:]
+
+    tmute = np.array((time + np.abs(offset / velocity)) / dt, dtype = int)
+        
+    for i in range(data_input.tracecount):
+        seismic_input[:tmute[i], i] *= 0.0
+
+    sgy.tools.from_array2D(output_name, seismic_input.T)
+    
+    data_output = sgy.open(output_name, "r+", ignore_geometry = True)
+    data_output.header = data_input.header
+    
+    return data_output
