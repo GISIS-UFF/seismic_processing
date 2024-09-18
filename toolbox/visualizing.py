@@ -38,18 +38,18 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     byte = mng.__keywords.get(key)
 
     if key == "cmp":      
-        cmp_indexes = mng.keyword_indexes(data, key)
+        cmp_indexes = mng.get_keyword_indexes(data, key)
         _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
         index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
 
     elif key == "rec":
-        rec_indexes = mng.keyword_indexes(data, key)
+        rec_indexes = mng.get_keyword_indexes(data, key)
         _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
         index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
     else: 
-        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+        index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
@@ -72,7 +72,7 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
 
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
 
-    tloc = np.linspace(0, nt, 11, dtype = int)
+    tloc = np.linspace(0, nt-1, 11, dtype = int)
     tlab = np.around(tloc * dt, decimals = 3)
     
     ax.set_xticks(xloc)
@@ -124,18 +124,18 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
     byte = mng.__keywords.get(key)
 
     if key == "cmp":      
-        cmp_indexes = mng.keyword_indexes(data, key)
+        cmp_indexes = mng.get_keyword_indexes(data, key)
         _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
         index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
 
     elif key == "rec":
-        rec_indexes = mng.keyword_indexes(data, key)
+        rec_indexes = mng.get_keyword_indexes(data, key)
         _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
         index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
     else: 
-        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+        index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
@@ -218,18 +218,18 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     byte = mng.__keywords.get(key)
 
     if key == "cmp":      
-        cmp_indexes = mng.keyword_indexes(data, key)
+        cmp_indexes = mng.get_keyword_indexes(data, key)
         _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
         index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
 
     elif key == "rec":
-        rec_indexes = mng.keyword_indexes(data, key)
+        rec_indexes = mng.get_keyword_indexes(data, key)
         _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
         index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
     else: 
-        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+        index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
@@ -348,19 +348,19 @@ def fourier_fk_domain(data : sgy.SegyFile, **kwargs) -> None:
     byte = mng.__keywords.get(key)
 
     if key == "cmp":      
-        cmp_indexes = mng.keyword_indexes(data, key)
+        cmp_indexes = mng.get_keyword_indexes(data, key)
         _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
         index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
 
     elif key == "rec":
-        rec_indexes = mng.keyword_indexes(data, key)
+        rec_indexes = mng.get_keyword_indexes(data, key)
         _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
         index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
     
     else:    
-        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+        index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
@@ -474,13 +474,13 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
     byte = mng.__keywords.get(key)
 
     if key == "cmp":      
-        cmp_indexes = mng.keyword_indexes(data, key)
+        cmp_indexes = mng.get_keyword_indexes(data, key)
         _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
         index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
 
     elif key == "rec":
-        rec_indexes = mng.keyword_indexes(data, key)
+        rec_indexes = mng.get_keyword_indexes(data, key)
         _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
         index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
@@ -491,7 +491,7 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
         exit()
     
     else:    
-        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+        index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
@@ -588,13 +588,13 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
     byte = mng.__keywords.get(key)
 
     if key == "cmp":      
-        cmp_indexes = mng.keyword_indexes(input, key)
+        cmp_indexes = mng.get_keyword_indexes(input, key)
         _, cmps_per_traces = np.unique(input.attributes(byte)[:], return_counts = True)
         complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
         index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
 
     elif key == "rec":
-        rec_indexes = mng.keyword_indexes(input, key)
+        rec_indexes = mng.get_keyword_indexes(input, key)
         _, src_per_rec = np.unique(input.attributes(byte)[:], return_counts = True)
         complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
         index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
@@ -605,7 +605,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
         exit()
     
     else:    
-        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(input, key)[0] 
+        index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(input, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(input, key, index)

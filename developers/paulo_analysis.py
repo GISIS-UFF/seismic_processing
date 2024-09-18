@@ -6,8 +6,10 @@ from toolbox import visualizing as view
 
 data = mng.import_sgy_file("../data/2D_Land_vibro_data_2ms/Line_001_raw.sgy")
 
-data_muted = filt.mute(data)
+cmps = mng.get_full_fold_cmps(data)
 
-view.gather(data_muted)
+data_cut = mng.gather_windowing(data, "full_fuld_data_test.sgy", key = "cmp", indexes_cut = cmps)
 
-view.difference(data, data_muted)
+mng.show_trace_header(data_cut)
+
+view.gather(data_cut, key = "cmp")

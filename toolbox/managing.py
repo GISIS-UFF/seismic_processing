@@ -28,14 +28,14 @@ def __check_keyword(key : str) -> None:
 
 def __check_index(data : sgy.SegyFile, key : str, index : int ) -> None:   
     
-    if index not in keyword_indexes(data, key):
+    if index not in get_keyword_indexes(data, key):
         print("\033[31mInvalid index!\033[m\
-                     \nPlease use the function \033[33mmng.keyword_indexes\033[m to choose a properly index.")
+                     \nPlease use the function \033[33mmng.get_keyword_indexes\033[m to choose a properly index.")
         exit()
 
-def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
+def get_keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
     '''
-    Print possible indexes to access in seismic gather.
+    Return possible indexes to access in seismic gather.
     
     ### Parameters:        
     
@@ -49,10 +49,10 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
 
     ### Examples:
     
-    >>> keyword_indexes(data, key = "src")
-    >>> keyword_indexes(data, key = "rec")
-    >>> keyword_indexes(data, key = "cmp")
-    >>> keyword_indexes(data, key = "off")
+    >>> get_keyword_indexes(data, key = "src")
+    >>> get_keyword_indexes(data, key = "rec")
+    >>> get_keyword_indexes(data, key = "cmp")
+    >>> get_keyword_indexes(data, key = "off")
     '''    
 
     __check_keyword(key)
@@ -60,6 +60,33 @@ def keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
     byte = __keywords.get(key)
 
     return np.unique(data.attributes(byte))
+
+def get_full_fold_cmps(data : sgy.SegyFile) -> np.ndarray:
+    '''
+    Return full fold cmp indexes to access in seismic gather.
+    
+    ### Parameters:        
+    
+    data: segyio object.
+    
+    ### Returns:
+
+    An array with all possible full fuld cmp indexes.     
+
+    ### Examples:
+    
+    >>> get_full_fold_cmps(data)
+    '''    
+    
+    key = "cmp"
+    byte = __keywords.get(key)
+
+    cmp_indexes = get_keyword_indexes(data, key)
+    _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+    complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+    indexes = cmp_indexes[complete_cmp_indexes[:]]
+
+    return indexes
 
 def import_sgy_file(input_name: str) -> sgy.SegyFile:
     '''
@@ -107,14 +134,12 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs) -> sgy.Se
 
     time_end: final time in seconds.
 
-    index_beg: initial index for specific keyword. 
+    indexes_cut: a list of indexes to extract from seismic data. 
     
-    index_end: final index for specific keyword.
-        
     ### Examples:
 
-    >>> mng.extract_gather_window(data, output_name, key = "src", time_beg = 0.1, time_end = 0.5)
-    >>> mng.extract_gather_window(data, output_name, key = "src", index_beg = 231, index_end = 231)
+    >>> mng.extract_gather_window(data, output_name, key = "src", indexes_cut = [281, 282, 286])
+    >>> mng.extract_gather_window(data, output_name, key = "cmp", indexes_cut = [631])
     '''    
 
     nt = data.attributes(115)[0][0]
@@ -122,7 +147,9 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs) -> sgy.Se
 
     key = kwargs.get("key") if "key" in kwargs else "src"
 
-    indexes = keyword_indexes(data, key)
+    byte = __keywords.get(key)
+
+    all_indexes = get_keyword_indexes(data, key)
 
     time_beg = kwargs.get("time_beg") if "time_beg" in kwargs else 0.0
     time_end = kwargs.get("time_end") if "time_end" in kwargs else (nt-1)*dt
@@ -131,31 +158,24 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs) -> sgy.Se
         if time_beg >= 0.0 and time_end < (nt-1)*dt:
             print("Error: incorrect time for slicing!")
             
-    index_beg = kwargs.get("index_beg") if "index_beg" in kwargs else indexes[0]    
-    index_end = kwargs.get("index_end") if "index_end" in kwargs else indexes[-1]   
+    indexes_cut = kwargs.get("indexes_cut") if "indexes_cut" in kwargs else all_indexes
+    
+    nTimes = int(int(time_end/dt) - (time_beg/dt)) + 1
 
-    __check_index(data, key, index_beg)
-    __check_index(data, key, index_end)
-
-    limit_beg = np.where(indexes == index_beg)[0][0]
-    limit_end = np.where(indexes == index_end)[0][0]
-
-    byte,_ = __keywords.get(key)
+    nTraces = np.zeros(len(indexes_cut), dtype = int)
+    for index in range(len(indexes_cut)):
+        nTraces[index] = len(np.where(data.attributes(byte)[:] == indexes_cut[index])[0])
 
     seismic = data.trace.raw[:].T
     
-    seismic = seismic[int(time_beg/dt):int(time_end/dt) + 1, :] 
+    seismic = seismic[int(time_beg/dt):int(time_end/dt)+1, :] 
 
-    nGathers = limit_end - limit_beg + 1
-    nTraces = len(np.where(data.attributes(byte)[:] == index_end)[0])
-    nTimes = int(int(time_end/dt) - (time_beg/dt)) + 1
+    new_seismic = np.zeros((nTimes, np.sum(nTraces, dtype = int)), dtype = np.float32)
 
-    new_seismic = np.zeros((nTimes, nTraces*nGathers), dtype = np.float32)
-
-    for k in range(limit_beg, limit_end + 1):
+    for index in range(len(indexes_cut)):
         
-        filling = slice(k*nTraces, k*nTraces + nTraces)    
-        picking = np.where(data.attributes(byte)[:] == indexes[k])[0]
+        filling = slice(np.sum(nTraces[:index], dtype=int), np.sum(nTraces[:index+1], dtype=int))    
+        picking = np.where(data.attributes(byte)[:] == indexes_cut[index])[0]
 
         new_seismic[:, filling] = seismic[:, picking]
 
@@ -164,17 +184,19 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs) -> sgy.Se
 
     header_values = np.fromiter(sgy.tracefield.keys.values(), dtype = int)
 
-    for i in range(limit_beg, limit_end + 1):
+    for i in range(len(indexes_cut)):
         
-        picking = np.where(data.attributes(byte)[:] == indexes[i])[0]  
+        picking = np.where(data.attributes(byte)[:] == indexes_cut[index])[0]  
         
-        for k in range(nTraces):
+        skip = np.sum(nTraces[:i], dtype = int)
+        
+        for k in range(nTraces[i]):
             for w in header_values:    
                 if w in __keywords.values():
-                    output.header[i*nTraces + k][w] = data.attributes(w)[picking[k]][0] 
+                    output.header[skip + k][w] = data.attributes(w)[picking[k]][0] 
 
-            output.header[i*nTraces + k][sgy.TraceField.TRACE_SAMPLE_COUNT] = nTimes
-            output.header[i*nTraces + k][sgy.TraceField.TRACE_SAMPLE_INTERVAL] = dt
+            output.header[skip + k][sgy.TraceField.TRACE_SAMPLE_COUNT] = nTimes
+            output.header[skip + k][sgy.TraceField.TRACE_SAMPLE_INTERVAL] = int(dt * 1e6)
 
     return output
 

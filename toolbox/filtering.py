@@ -131,10 +131,43 @@ def fourier_fx_domain(data_input : sgy.SegyFile, **kwargs) -> sgy.SegyFile:
     return data_output
 
 def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
-    pass
-    # fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
+    '''
+    Fourier 1D bandpass filtering. This function apply this filter along all data traces, 
+    exporting and returning a new data filtered. 
+    
+    ### Parameters:        
+    
+    data_input: segyio object.
 
-    # key = kwargs.get("key") if "key" in kwargs else "src"
+    ### Optional parameters:
+        
+    fmax: maximum frequency for visualization.    
+    
+    output_name: path to export data results.    
+
+    ### Returns:
+
+    data_output: segyio object.
+
+    ### Examples:
+
+    >>> filt.fourier_fx_domain(data, fmax = 200)
+    >>> filt.fourier_fx_domain(data, fmin = 10, fmax = 100)            
+    '''    
+
+    key = "cmp"
+    byte = mng.__keywords.get(key)
+    
+    fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
+
+    cmp_indexes = mng.get_keyword_indexes(data, key)
+    _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+    complete_cmp_indexes = np.where(cmps_per_traces > np.max(cmps_per_traces))[0]
+    indexes = cmp_indexes[complete_cmp_indexes[:]]
+
+    print(indexes)
+
+
     # index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
     # mng.__check_keyword(key)
