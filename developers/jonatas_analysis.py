@@ -3,11 +3,12 @@ path.append("../")
 
 from toolbox import managing as mng
 from toolbox import filtering
+from toolbox import visualizing as view
 
-data = mng.import_sgy_file("../data/overthrust_synthetic_seismic_data.sgy")
-    
-velocity = 3000
-t0 = 0.25
+data = mng.import_sgy_file("../data/Buzios_2D_streamer_6Km_GISIS_dada_broadbandwave.segy")
+
+velocity = 1800
+t0 = 0.8
 
 filtering.mute(data, velocity, t0)
 
