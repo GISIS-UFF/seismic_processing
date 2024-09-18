@@ -1,8 +1,10 @@
 import numpy as np
 import segyio as sgy
+
 import matplotlib.pyplot as plt
 
 from toolbox import managing as mng
+from toolbox import filtering as filt
 
 def gather(data : sgy.SegyFile, **kwargs) -> None:
     '''
@@ -16,25 +18,36 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
 
     key: header keyword options -> ["src", "rec", "off", "cmp"] - "src" as default
     
-    index: integer that select a common gather. -  ["src", "rec", "off", "cmp"] plots first index and "cmp" plots the first complet CMP as default
+    index: integer that select a common gather. 
+    
+    ### Hints:
+    
+    For each header keyword the first index is plotted. 
+    
+    Specially for a cmp gather, the first full fold data is plotted. 
         
     ### Examples:
 
-    >>> view.gather(data)                           # plots first shot 
-    >>> view.gather(data, key = "off")              # plots first offset 
-    >>> view.gather(data, key = "rec", index = 789) # plots rec index 789
-    >>> view.gather(data, key = "cmp", index = 512) # plots cmp index 512
+    >>> view.gather(data)                            
+    >>> view.gather(data, key = "off")               
+    >>> view.gather(data, key = "rec", index = 789) 
+    >>> view.gather(data, key = "cmp", index = 512) 
     '''    
     key = kwargs.get("key") if "key" in kwargs else "src"
 
     byte = mng.__keywords.get(key)
 
-    if key == "cmp":
+    if key == "cmp":      
+        cmp_indexes = mng.keyword_indexes(data, key)
         _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
-
         complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+        index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
 
-        index = kwargs.get("index") if "index" in kwargs else complete_cmp_indexes[0]
+    elif key == "rec":
+        rec_indexes = mng.keyword_indexes(data, key)
+        _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
+        index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
     else: 
         index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
@@ -43,32 +56,33 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
-    seismic = data.trace.raw[:].T
-    seismic = seismic[:, traces]
-
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
 
-    scale = 0.8*np.std(seismic)
+    seismic = np.zeros((nt, len(traces)))
+
+    for i in range(len(traces)):
+        seismic[:,i] = data.trace.raw[traces[i]] 
+    
+    scale = 0.9*np.std(seismic)
 
     fig, ax = plt.subplots(ncols = 1, nrows = 1, figsize = (10, 5))
 
     img = ax.imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
-    xlab = traces[xloc]
 
     tloc = np.linspace(0, nt, 11, dtype = int)
     tlab = np.around(tloc * dt, decimals = 3)
     
     ax.set_xticks(xloc)
-    ax.set_xticklabels(xlab)
+    ax.set_xticklabels(xloc)
     
     ax.set_yticks(tloc)
     ax.set_yticklabels(tlab)
 
     ax.set_ylabel('Time [s]', fontsize = 15)
-    ax.set_xlabel('Trace number', fontsize = 15)
+    ax.set_xlabel('Relative trace number', fontsize = 15)
 
     cbar = fig.colorbar(img, ax = ax)
     cbar.set_label("Amplitude", fontsize = 15)
@@ -78,8 +92,8 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
 
 def geometry(data : sgy.SegyFile, **kwargs) -> None:
     '''
-    Plot geometry, cmp coodinates the current configuration according 
-    to a specific header keyword.
+    Plot geometry, cmp coodinates and current configuration 
+    according to a specific header keyword.
     
     ### Parameters:        
     
@@ -91,19 +105,32 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
 
     ### Examples:
 
-    >>> view.geometry(data)                           # plots first shot 
-    >>> view.geometry(data, key = "off")              # plots first offset
-    >>> view.geometry(data, key = "rec", index = 35)  # plots rec index 789
-    >>> view.geometry(data, key = "cmp", index = 512) # plots cmp index 512
+    >>> view.geometry(data)                           
+    >>> view.geometry(data, key = "off")              
+    >>> view.geometry(data, key = "rec", index = 35)  
+    >>> view.geometry(data, key = "cmp", index = 512) 
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+
+    byte = mng.__keywords.get(key)
+
+    if key == "cmp":      
+        cmp_indexes = mng.keyword_indexes(data, key)
+        _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+        index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
+
+    elif key == "rec":
+        rec_indexes = mng.keyword_indexes(data, key)
+        _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
+        index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
+    else: 
+        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
-
-    byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
@@ -147,43 +174,64 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
 
 def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     '''
-    Plot the amplitude spectra of each trace in gather according to a specific header keyword.
+    Plots the amplitude spectra for each trace in gather according to a specific header keyword. 
+    Also plots a trace with its amplitude spectra selected by user.
     
     ### Parameters:        
     
     data: segyio object.
 
-    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    ### Optional parameters:
+                    
+    key: header keyword options -> ['src', 'rec', 'cmp'].
     
     index: integer that select a common gather.  
     
     fmax: maximum frequency to visualize.    
 
-    trace_number: relative trace to show individually.
+    trace_number: relative trace according with current gather to show individually.
+
+    ### Hints:
+    
+    For each header keyword the first index is plotted. 
+    
+    Specially for a cmp gather, the first full fold data is plotted. 
 
     ### Examples:
 
-    >>> view.fourier_fx_domain(data, trace_number = 100)       # plots first shot             
-    >>> view.fourier_fx_domain(data, key = "off", fmax = 200)  # plots first offset
-    >>> view.fourier_fx_domain(data, key = "rec", index = 789) # plots rec index 789  
-    >>> view.fourier_fx_domain(data, key = "cmp", index = 512) # plots cmp index 512
+    >>> view.fourier_fx_domain(data, trace_number = 100)                    
+    >>> view.fourier_fx_domain(data, key = "off", fmax = 200)  
+    >>> view.fourier_fx_domain(data, key = "rec", index = 789)   
+    >>> view.fourier_fx_domain(data, key = "cmp", index = 512) 
     '''    
 
-    fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
-
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+
+    byte = mng.__keywords.get(key)
+
+    if key == "cmp":      
+        cmp_indexes = mng.keyword_indexes(data, key)
+        _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+        index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
+
+    elif key == "rec":
+        rec_indexes = mng.keyword_indexes(data, key)
+        _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
+        index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
+    else: 
+        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
 
-    byte = mng.__keywords.get(key)
+    fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
+    trace_number = kwargs.get("trace_number") if "trace_number" in kwargs else 0
 
     traces = np.where(data.attributes(byte)[:] == index)[0]    
 
-    trace_number = kwargs.get("trace_number") if "trace_number" in kwargs else 0
-
-    if trace_number > len(traces):
+    if trace_number < 0 or trace_number > len(traces):
         print("Wrong argument for trace_number!")
         print(f"Relative traces available: 0 to {len(traces)-1}")
         exit()
@@ -191,8 +239,10 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
     
-    seismic = data.trace.raw[:].T
-    seismic = seismic[:, traces]
+    seismic = np.zeros((nt, len(traces)))
+
+    for i in range(len(traces)):
+        seismic[:,i] = data.trace.raw[traces[i]] 
 
     time = np.arange(nt)*dt
     frequency = np.fft.fftfreq(nt, dt)
@@ -201,7 +251,7 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     for i in range(len(traces)):
         fx_seismic[:,i] *= 1.0 / np.max(fx_seismic[:,i]) 
 
-    scale = 0.8*np.std(seismic)
+    scale = 0.9*np.std(seismic)
 
     mask = np.logical_and(frequency >= 0.0, frequency <= fmax)
 
@@ -209,7 +259,6 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     flab = np.around(np.ceil(frequency[floc]), decimals = 1)
     
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
-    xlab = traces[xloc]
     
     tloc = np.linspace(0, nt, 11, dtype = int)
     tlab = np.around(tloc*dt, decimals = 1)
@@ -219,18 +268,14 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     im = ax[0,0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
     ax[0,0].plot(trace_number*np.ones(nt), time/dt, "--r")
-
-    ax[0,0].set_yticks(tloc)
-    ax[0,0].set_yticklabels(tlab)
     ax[0,0].set_xticks(xloc)
-    ax[0,0].set_xticklabels(xlab)
-
+    ax[0,0].set_yticks(tloc)
+    ax[0,0].set_xticklabels(xloc)
+    ax[0,0].set_yticklabels(tlab)
     ax[0,0].set_ylabel('Time [s]', fontsize = 15)
-    ax[0,0].set_xlabel('Trace number', fontsize = 15)
-
+    ax[0,0].set_xlabel('Relative trace number', fontsize = 15)
     ax[0,0].cbar = fig.colorbar(im, ax = ax[0,0])
     ax[0,0].cbar.set_label("Amplitude", fontsize = 15) 
-
 
     ax[0,1].plot(seismic[:, trace_number], time)
     ax[0,1].set_xlabel("Amplitude", fontsize = 15)
@@ -238,22 +283,17 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     ax[0,1].set_xlim([-5*scale, 5*scale])
     ax[0,1].invert_yaxis()
 
-
     fx = ax[1,0].imshow(np.abs(fx_seismic[mask,:]), aspect = "auto", cmap = "jet")
 
     ax[1,0].plot(trace_number*np.ones(len(frequency[mask])), np.arange(len(frequency[mask])), "--r")
-
-    ax[1,0].set_yticks(floc)
-    ax[1,0].set_yticklabels(flab)
     ax[1,0].set_xticks(xloc)
-    ax[1,0].set_xticklabels(xlab)
-
+    ax[1,0].set_yticks(floc)
+    ax[1,0].set_xticklabels(xloc)
+    ax[1,0].set_yticklabels(flab)
     ax[1,0].set_ylabel("Frequency [Hz]", fontsize = 15)
-    ax[1,0].set_xlabel("Trace number", fontsize = 15)
-
+    ax[1,0].set_xlabel("Relative trace number", fontsize = 15)
     ax[1,0].cbar = fig.colorbar(fx, ax = ax[1,0])
     ax[1,0].cbar.set_label("Amplitude", fontsize = 15) 
-
 
     ax[1,1].plot(np.abs(fx_seismic[mask, trace_number]), frequency[mask])
     ax[1,1].set_xlabel("Normalized amplitude", fontsize = 15)
@@ -265,57 +305,80 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
 
 def fourier_fk_domain(data : sgy.SegyFile, **kwargs) -> None:
     '''
-    Plot the amplitude spectra of each trace in gather according to a specific header keyword.
+    Plots the 2D fourier transform according to a specific header keyword.
     
     ### Parameters:        
     
     data: segyio object.
 
-    key: header keyword options -> ["src", "rec", "cmp"]
+    ### Optional parameters:
+                    
+    key: header keyword options -> ['src', 'rec', 'cmp'].
     
     index: integer that select a common gather.  
 
     fmax: maximum frequency to visualize    
+
+    ### Hints:
     
+    For each header keyword the first index is plotted. 
+    
+    Specially for a cmp gather, the first full fold data is plotted. 
+        
     ### Examples:
 
-    >>> view.fourier_fx_domain(data, fmax = 200)               # plots first shot             
-    >>> view.fourier_fx_domain(data, key = "rec", index = 789) # plots rec index 789  
-    >>> view.fourier_fx_domain(data, key = "cmp", index = 512) # plots cmp index 512
+    >>> view.fourier_fk_domain(data, fmax = 200)                            
+    >>> view.fourier_fk_domain(data, key = "off", fmax = 200)  
+    >>> view.fourier_fk_domain(data, key = "rec", index = 789)   
+    >>> view.fourier_fk_domain(data, key = "cmp", index = 512) 
     '''    
 
     fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+
+    byte = mng.__keywords.get(key)
+
+    if key == "cmp":      
+        cmp_indexes = mng.keyword_indexes(data, key)
+        _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+        index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
+
+    elif key == "rec":
+        rec_indexes = mng.keyword_indexes(data, key)
+        _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
+        index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
+    
+    else:    
+        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
-
-    byte = mng.__keywords.get(key)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
 
-    seismic = data.trace.raw[:].T
-    seismic = seismic[:, traces]
-        
-    distance = data.attributes(37)[traces] / data.attributes(69)[traces]
+    seismic = np.zeros((nt, len(traces)))
 
-    nx = len(traces)
-    dh = np.median(np.abs(np.abs(distance[1:]) - np.abs(distance[:-1]))) 
+    for i in range(len(traces)):
+        seismic[:,i] = data.trace.raw[traces[i]] 
+        
+    dist = data.attributes(37)[traces] / data.attributes(69)[traces]
+    
+    dh = np.abs(dist[0]) if key == "off" else np.median(np.abs(np.abs(dist[1:]) - np.abs(dist[:-1])))
 
     fk_seismic = np.fft.fftshift(np.fft.fft2(seismic))
 
     frequency = np.fft.fftshift(np.fft.fftfreq(nt, dt))
-    wavenumber = np.fft.fftshift(np.fft.fftfreq(nx, dh))
+    wavenumber = np.fft.fftshift(np.fft.fftfreq(len(traces), dh))
 
     mask = np.logical_and(frequency >= 0.0, frequency <= fmax)
 
     xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
-    xlab = traces[xloc]
 
     tloc = np.linspace(0, nt-1, 11, dtype = int)
     tlab = np.around(tloc*dt, decimals = 1)
@@ -324,38 +387,31 @@ def fourier_fk_domain(data : sgy.SegyFile, **kwargs) -> None:
     flab = np.around(np.ceil(frequency[mask][floc][::-1]), decimals = 1)
 
     kloc = np.linspace(0, len(wavenumber)-1, 5, dtype = int)
-    klab = np.around(wavenumber[kloc], decimals = 3)
+    klab = np.around(wavenumber[kloc], decimals = 5)
 
-    scale = 0.8*np.std(seismic)
+    scale = 0.9*np.std(seismic)
     
     fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5))
 
     im = ax[0].imshow(seismic, aspect = "auto", cmap = "Greys", vmin = -scale, vmax = scale)
 
-    ax[0].set_yticks(tloc)
-    ax[0].set_yticklabels(tlab)
     ax[0].set_xticks(xloc)
-    ax[0].set_xticklabels(xlab)
-
+    ax[0].set_yticks(tloc)
+    ax[0].set_xticklabels(xloc)
+    ax[0].set_yticklabels(tlab)
     ax[0].set_ylabel('Time [s]', fontsize = 15)
-    ax[0].set_xlabel('Trace number', fontsize = 15)
-
-    fk = ax[1].imshow(np.abs(fk_seismic[mask,:][::-1]), aspect = "auto", cmap = "jet")
-    
-    ax[1].set_yticks(floc)
-    ax[1].set_yticklabels(flab)
-
-    ax[1].set_xticks(kloc)
-    ax[1].set_xticklabels(klab)
-
-    ax[1].set_ylabel("Frequency [Hz]", fontsize = 15)
-    ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]", fontsize = 15)
-
-    ax[1].set_ylabel("Frequency [Hz]")
-
+    ax[0].set_xlabel('Relative trace number', fontsize = 15)
     ax[0].cbar = fig.colorbar(im, ax = ax[0])
     ax[0].cbar.set_label("Amplitude", fontsize = 15) 
 
+    fk = ax[1].imshow(np.abs(fk_seismic[mask,:][::-1]), aspect = "auto", cmap = "jet")
+    
+    ax[1].set_xticks(kloc)
+    ax[1].set_yticks(floc)
+    ax[1].set_xticklabels(klab)
+    ax[1].set_yticklabels(flab)
+    ax[1].set_ylabel("Frequency [Hz]", fontsize = 15)
+    ax[1].set_xlabel(r"Wavenumber [m$^{-1}$]", fontsize = 15)
     ax[1].cbar = fig.colorbar(fk, ax = ax[1])
     ax[1].cbar.set_label("Amplitude", fontsize = 15) 
     
@@ -364,122 +420,130 @@ def fourier_fk_domain(data : sgy.SegyFile, **kwargs) -> None:
 
 def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
     '''
-    Plot the Radon transform from a cmp gather.
+    Plots the Radon transform according to a specific header keyword.
     
     ### Parameters:        
     
     input: segyio object.
-        
-    index: integer that select a cmp gather.  
 
-    style: Radon transform type -> ["linear", "parabolic", "hyperbolic"]    
+    ### Optional parameters:
+                    
+    key: header keyword options -> ['src', 'rec', 'cmp'].
 
+    index: integer that select a common gather.  
+
+    style: Radon transform type -> ['linear', 'parabolic', 'hyperbolic'].    
+
+    vmin: Minimum velocity (commonly 1000 m/s).
+
+    vmax: Maximum velocity (commonly 3000 m/s).
+
+    ### Hints:
+    
+    For each header keyword the first index is plotted. 
+    
+    Specially for a cmp gather, the first full fold data is plotted. 
+    
     ### Examples:
-
+    
+    >>> view.radon_transform(data, style = "linear")
+    >>> view.radon_transform(data, key = "rec", style = "hyperbolic")
+    >>> view.radon_transform(data, key = "cmp", vmin = 100, vmax = 1000)
     '''  
 
-    key = "cmp"
-
-    byte = mng.__keywords.get(key) 
-
-    _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
-
-    complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
-
-    index = kwargs.get("index") if "index" in kwargs else complete_cmp_indexes[0] 
-
-    mng.__check_index(data, key, index)
+    vmin = kwargs.get("vmin") if "vmin" in kwargs else 1000 
+    vmax = kwargs.get("vmax") if "vmax" in kwargs else 3000 
+    nvel = kwargs.get("nvel") if "nvel" in kwargs else 101
 
     style = kwargs.get("style").lower() if "style" in kwargs else "parabolic"
 
-    use = kwargs.get("use") if "use" in kwargs else 0 # adicionado para identificar o uso da função para visualização do semblance
-    vmin = kwargs.get("vmin") if "vmin" in kwargs else 300 # alterado
-    vmax = kwargs.get("vmax") if "vmax" in kwargs else 6000 # alterado
-    nvel = kwargs.get("nvel") if "nvel" in kwargs else 101
+    if style not in ['linear', 'parabolic', 'hyperbolic']:
+        print(f"Error: {style} style is not defined! Use a valid style: ['linear', 'parabolic', 'hyperbolic']")
+        exit()
+
+    key = kwargs.get("key") if "key" in kwargs else "src"
+
+    byte = mng.__keywords.get(key)
+
+    if key == "cmp":      
+        cmp_indexes = mng.keyword_indexes(data, key)
+        _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+        index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
+
+    elif key == "rec":
+        rec_indexes = mng.keyword_indexes(data, key)
+        _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
+        index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
+
+    elif key == "off": 
+        print("Wrong argument for key!")
+        print("Possible keys: ['src', 'rec', 'cmp']")
+        exit()
+    
+    else:    
+        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
-
-    seismic = data.trace.raw[:].T
-    seismic = seismic[:, traces]
 
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
 
-    offset = data.attributes(37)[traces] / data.attributes(69)[traces]
+    seismic = np.zeros((nt, len(traces)))
+
+    for i in range(len(traces)):
+        seismic[:,i] = data.trace.raw[traces[i]] 
 
     times = np.arange(nt) * dt
-    curvs = np.linspace(vmin, vmax, nvel)
+    offsets = data.attributes(37)[traces] / data.attributes(69)[traces]
+    velocities = np.linspace(vmin, vmax, nvel)
 
-    radon = np.zeros((nt, nvel))
+    domain = filt.radon_forward(seismic, dt, times, offsets, velocities, style)
+
+    radon = np.sum(domain, axis = 1)
     
-    for i in range(nt):
-        for j in range(nvel):
+    scale1 = 0.9*np.std(seismic)
+    scale2 = 0.9*np.std(radon)
 
-            if style == "linear":
-                curvature = times[i] + np.abs(offset)/curvs[j]        
-            
-            elif style == "parabolic":
-                curvature = times[i] + (offset/curvs[j])**2
-            
-            elif style == "hyperbolic":
-                curvature = np.sqrt(times[i]**2 + (offset/curvs[j])**2)            
-            
-            else:
-                print(f"Error: \033[31m{style}\033[m style is not defined!")
-                print("Use a valid style: ['linear', 'parabolic', 'hyperbolic']")
-                exit()    
-        
-            mask = np.logical_and(curvature >= 0, curvature <= (nt-1)*dt)
+    xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
 
-            x = np.arange(len(traces))[mask]
-            t = np.array(curvature[mask]/dt, dtype = int)
+    tloc = np.linspace(0, nt-1, 11, dtype = int)
+    tlab = np.around(tloc * dt, decimals = 3)
     
-            if use == 1:
-                radon[i,j] += np.sum(np.abs(seismic[t,x]))**2
-
-            else:
-                radon[i,j] = np.sum(seismic[t,x])             
-
-    amplifier = np.gradient(radon, axis=1)
-    alpha = 3
-    radon_amplified = radon + amplifier * alpha
-
-    scale1 = 2*np.std(seismic)
-    scale2 = 2*np.std(radon)
-    scale3 = 2*np.std(radon_amplified)
-    
+    vloc = np.linspace(0, nvel-1, 5, dtype = int)
+    vlab = velocities[vloc]
 
     fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5)) 
 
     im1 = ax[0].imshow(seismic, aspect = 'auto', cmap = 'Greys', vmin = -scale1, vmax = scale1) 
-    ax[0].set_xlabel('Trace', fontsize=15) 
-    ax[0].set_ylabel('Time [s]', fontsize=15)
+    ax[0].set_xticks(xloc)
+    ax[0].set_yticks(tloc)
+    ax[0].set_xticklabels(xloc)
+    ax[0].set_yticklabels(tlab)
+    ax[0].set_xlabel('Relative trace index', fontsize = 15) 
+    ax[0].set_ylabel('Time [s]', fontsize = 15)
+    cbar1 = fig.colorbar(im1, ax = ax[0])
+    cbar1.set_label("Amplitude", fontsize = 15)
 
-    cbar1 = fig.colorbar(im1, ax=ax[0])
-    cbar1.set_label("Amplitude", fontsize=10)
+    im2 = ax[1].imshow(radon, aspect = 'auto', cmap = 'jet', vmin = -scale2, vmax = scale2)
 
-    if use == 1:
-        ylim = ax[0].get_ylim()
-        # im2 = ax[1].imshow(radon, aspect='auto', cmap='jet', vmin=-scale2, vmax=scale2)
-        im2 = ax[1].imshow(radon_amplified, aspect='auto', cmap='jet', vmin=0, vmax=scale3, extent=[vmin, vmax, ylim[0], ylim[1]])
-        ax[1].set_xlabel('Velocity [m/s]', fontsize=15) 
-        ax[1].set_ylabel('Time [s]', fontsize=15)
-
-        cbar2 = fig.colorbar(im2, ax=ax[1])
-        cbar2.set_label("Semblance", fontsize=10)
-        fig.suptitle(f'Velocity Semblance - Curent CMP: {index}', fontsize=16)
-
-    else:
-        im2 = ax[1].imshow(radon, aspect = 'auto', cmap = 'jet', vmin = -scale2, vmax = scale2)
-    
-    
+    ax[1].set_xlabel('Velocity [m/s]', fontsize = 15) 
+    ax[1].set_ylabel('Time [s]', fontsize = 15)
+    ax[1].set_xticks(vloc)
+    ax[1].set_yticks(tloc)
+    ax[1].set_xticklabels(vlab)
+    ax[1].set_yticklabels(tlab)
+    ax[1].set_xlabel('Velocity [m/s]', fontsize = 15) 
+    ax[1].set_ylabel('Time [s]', fontsize = 15)
+    cbar2 = fig.colorbar(im2, ax = ax[1])
+    cbar2.set_label("Amplitude", fontsize = 10)
 
     fig.tight_layout() 
     plt.show()
-
-
-
-    pass
 
 def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
     '''
@@ -491,56 +555,83 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
     
     output: segyio object.
 
+    ### Optional parameters:
+
     key: header keyword options -> ["src", "rec", "off", "cmp"]
     
     index: integer that select a common gather.  
 
+    ### Hints:
+    
+    For each header keyword the first index is plotted. 
+    
+    Specially for a cmp gather, the first full fold data is plotted. 
+        
     ### Examples:
 
-    >>> view.difference(data,data_filt, key = "src", index = 51)
-    >>> view.difference(data,data_filt, key = "rec", index = 203)
-    >>> view.difference(data,data_filt, key = "cmp", index = 315)
-    >>> view.difference(data,data_filt, key = "off", index = 223750)
+    >>> view.difference(data, data_filt, key = "src")
+    >>> view.difference(data, data_filt, key = "rec")
+    >>> view.difference(data, data_filt, key = "cmp")
+    >>> view.difference(data, data_filt, key = "off")
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(input, key)[0] 
-
-    mng.__check_keyword(key)
 
     byte = mng.__keywords.get(key)
+
+    if key == "cmp":      
+        cmp_indexes = mng.keyword_indexes(input, key)
+        _, cmps_per_traces = np.unique(input.attributes(byte)[:], return_counts = True)
+        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+        index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
+
+    elif key == "rec":
+        rec_indexes = mng.keyword_indexes(input, key)
+        _, src_per_rec = np.unique(input.attributes(byte)[:], return_counts = True)
+        complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
+        index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
+
+    elif key == "off": 
+        print("Wrong argument for key!")
+        print("Possible keys: ['src', 'rec', 'cmp']")
+        exit()
+    
+    else:    
+        index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(input, key)[0] 
+
+    mng.__check_keyword(key)
+    mng.__check_index(input, key, index)
 
     traces = np.where(input.attributes(byte)[:] == index)[0]
     
     nt = input.attributes(115)[0][0]
     dt = input.attributes(117)[0][0] * 1e-6
 
-    seismic_input = input.trace.raw[:].T
-    seismic_input = seismic_input[:, traces]
+    seismic_input = np.zeros((nt, len(traces)))
+    seismic_output = np.zeros((nt, len(traces)))
 
-    seismic_output = output.trace.raw[:].T
-    seismic_output = seismic_output[:, traces]
+    for i in range(len(traces)):
+        seismic_input[:,i] = input.trace.raw[traces[i]] 
+        seismic_output[:,i] = output.trace.raw[traces[i]] 
 
     seismic_diff = seismic_output - seismic_input
 
-    scale = 0.9*np.std(seismic_output)
+    scale = 0.9*np.std(seismic_input)
 
     fig, ax = plt.subplots(ncols = 3, nrows = 1, figsize = (18, 5))
 
+    xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
+    tloc = np.linspace(0, nt-1, 11, dtype = int)
+    tlab = np.around(tloc*dt, decimals = 3)
+
     def set_config(p, fx):
-                
-        xloc = np.linspace(0, len(traces)-1, 5, dtype = int)
-        xlab = traces[xloc]
-    
-        tloc = np.linspace(0, nt-1, 11, dtype = int)
-        tlab = np.around(tloc*dt, decimals = 3)
-        
+                        
         ax[p].set_yticks(tloc)
         ax[p].set_yticklabels(tlab)
         ax[p].set_xticks(xloc)
-        ax[p].set_xticklabels(xlab)
+        ax[p].set_xticklabels(xloc)
         
-        ax[p].set_xlabel('Trace number', fontsize = 15)
+        ax[p].set_xlabel('Relative trace number', fontsize = 15)
         ax[p].set_ylabel('Time [s]', fontsize = 15)
 
         ax[p].cbar = fig.colorbar(fx, ax = ax[p])
@@ -557,31 +648,3 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
         
     fig.tight_layout()
     plt.show()    
-
-def semblance (data: sgy.SegyFile, **kwargs):
-    """
-    Plot the velocity semblance of the according CMP Gather
-
-    ### Mandatory Parameters:
-
-    data: segyio object.
-
-    ### Other Parameters
-
-    index: CMP gather index. - First Complete CMP as Default
-    
-    vmin: minimum velocity in semblance. - 300.0 ms as Default
-    
-    vmax: maximum velocity in semblance. - 6000.0 ms as Default
-
-    dv: velocity variation in semblance. - 101.0 ms as Default
-
-
-    ### Examples:
-    
-    >>> view.semblance(data)
-    >>> view.semblance(data, index=index, vmax=vmax)
-    
-    """
-    radon_transform(data, style="hyperbolic", use=1, **kwargs)
-

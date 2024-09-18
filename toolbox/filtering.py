@@ -1,15 +1,81 @@
 import scipy as sc
+import numba as nb
 import numpy as np
 import segyio as sgy
-from scipy.ndimage import gaussian_filter
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-from matplotlib.path import Path
-
-from numba import jit
 
 from toolbox import managing as mng
+
+@nb.jit(nopython = True, parallel = True)
+def radon_forward(seismic, dt, times, offsets, velocities, style):
+
+    Nt = len(times)
+    Nh = len(offsets)
+    Np = len(velocities)
+
+    domain = np.zeros((Nt, Nh, Np))
+
+    if style == "linear":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = times[tind] + offsets[hind]/velocities[vind]                        
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        domain[tind, hind, vind] = seismic[int(curvature/dt), hind]           
+
+    elif style == "parabolic":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = times[tind] + (offsets[hind]/velocities[vind])**2
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        domain[tind, hind, vind] = seismic[int(curvature/dt), hind]           
+                
+    elif style == "hyperbolic":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = np.sqrt(times[tind]**2 + (offsets[hind]/velocities[vind])**2)            
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        domain[tind, hind, vind] = seismic[int(curvature/dt), hind]           
+
+    return domain
+
+@nb.jit(nopython = True, parallel = True)
+def radon_adjoint(domain, dt, times, offsets, velocities, style):
+
+    Nt = len(times)
+    Nh = len(offsets)
+    Np = len(velocities)
+
+    data = np.zeros((Nt, Nh))
+
+    if style == "linear":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = times[tind] + offsets[hind]/velocities[vind]        
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        data[int(curvature/dt), hind] = domain[tind, hind, vind]           
+                
+    elif style == "parabolic":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = times[tind] + (offsets[hind]/velocities[vind])**2
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        data[int(curvature/dt), hind] = domain[tind, hind, vind]           
+                
+    elif style == "hyperbolic":
+        for tind in nb.prange(Nt): 
+            for vind in nb.prange(Np):  
+                for hind in nb.prange(Nh):
+                    curvature = np.sqrt(times[tind]**2 + (offsets[hind]/velocities[vind])**2)            
+                    if 0 <= curvature <= (Nt-1)*dt:
+                        data[int(curvature/dt), hind] = domain[tind, hind, vind]           
+
+    return data
 
 def fourier_fx_domain(input : sgy.SegyFile, fmin : float, fmax : float, output_name : str) -> sgy.SegyFile:
 
