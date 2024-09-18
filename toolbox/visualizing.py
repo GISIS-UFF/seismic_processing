@@ -24,7 +24,7 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     
     For each header keyword the first index is plotted. 
     
-    Specially for a cmp gather, the first full fold data is plotted. 
+    Specially for a cmp and rec gather, the first complete data is plotted. 
         
     ### Examples:
 
@@ -99,9 +99,17 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
     
     data: segyio object.
 
-    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    ### Other Parameters:
+
+    key: header keyword options -> ["src", "rec", "off", "cmp"] - "src" as default
     
-    index: integer that select a common gather.  
+    index: integer that select a common gather. 
+    
+    ### Hints:
+    
+    For each header keyword the first index is plotted. 
+    
+    Specially for a cmp and rec gather, the first complete data is plotted. 
 
     ### Examples:
 
@@ -195,7 +203,7 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     
     For each header keyword the first index is plotted. 
     
-    Specially for a cmp gather, the first full fold data is plotted. 
+    Specially for a cmp and rec gather, the first complete data is plotted. 
 
     ### Examples:
 
@@ -317,13 +325,13 @@ def fourier_fk_domain(data : sgy.SegyFile, **kwargs) -> None:
     
     index: integer that select a common gather.  
 
-    fmax: maximum frequency to visualize    
+    fmax: maximum frequency to visualize.    
 
     ### Hints:
     
     For each header keyword the first index is plotted. 
     
-    Specially for a cmp gather, the first full fold data is plotted. 
+    Specially for a cmp and rec gather, the first complete data is plotted. 
         
     ### Examples:
 
@@ -442,7 +450,7 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
     
     For each header keyword the first index is plotted. 
     
-    Specially for a cmp gather, the first full fold data is plotted. 
+    Specially for a cmp and rec gather, the first complete data is plotted. 
     
     ### Examples:
     
@@ -565,7 +573,7 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
     
     For each header keyword the first index is plotted. 
     
-    Specially for a cmp gather, the first full fold data is plotted. 
+    Specially for a cmp and rec gather, the first complete data is plotted. 
         
     ### Examples:
 
