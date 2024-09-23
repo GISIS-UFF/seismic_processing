@@ -137,7 +137,9 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs) -> sgy.Se
     
     data: segyio object.
 
-    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    output_name: path to write sliced seismic. 
+
+    key: header keyword options -> ["src", "rec", "off", "cmp"].
     
     time_beg: initial time in seconds.
 
@@ -147,8 +149,12 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs) -> sgy.Se
     
     ### Examples:
 
-    >>> mng.extract_gather_window(data, output_name, key = "src", indexes_cut = [281, 282, 286])
-    >>> mng.extract_gather_window(data, output_name, key = "cmp", indexes_cut = [631])
+    >>> mng.gather_windowing(data, output_name, key = "cmp", indexes_cut = 631)
+    >>> mng.gather_windowing(data, output_name, key = "src", indexes_cut = [281, 285, 289])
+
+    ### Outputs:
+
+    output: segyio object.
     '''    
 
     nt = data.attributes(115)[0][0]
@@ -212,13 +218,28 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs) -> sgy.Se
 
 def edit_trace_header(data : sgy.SegyFile, bytes : list, values : list[np.ndarray]):
     '''
-    Instructions
+    Seismic data header editing.
 
+    ### Parameters:
 
+    data: segyio object.
+
+    bytes: a sequence of bytes to edit.
+
+    values: arrays with comlete values per trace corresponting with its bytes.
+
+    ### Examples:
+
+    Check examples folder for realistic trace edition.
+    
+    >>> mng.edit_trace_header(data, bytes = 1, values = [i+1 for i in range(nTraces)])    
     '''
 
+    bytes = [bytes] if not isinstance(bytes, (np.ndarray, list)) else bytes 
+
     if len(bytes) != len(values):
-        print("Error message")
+        print("You must to assign each byte with its respective value array!")
+        exit()
 
     for i in range(data.tracecount):
         for k, byte in enumerate(bytes):
