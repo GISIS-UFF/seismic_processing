@@ -1,21 +1,20 @@
 import sys; sys.path.append("../")
 
 from toolbox import managing as mng
+from toolbox import stacking as stk 
 from toolbox import filtering as filt
 from toolbox import visualizing as view
 
 data = mng.import_sgy_file("../data/mobil_viking_graben_north_sea.sgy")
 
-# mng.show_trace_header(data)
+data_muted = filt.mute(data, time = 0.2, velocity = 1600)
 
-cmps = mng.get_full_fold_cmps(data)
+view.gather(data_muted, key = "cmp")
 
-cmps = cmps[0]
+cmps = mng.get_full_fold_cmps(data_muted)
 
-data_cut = mng.gather_windowing(data, "full_fuld_data_test.sgy", key = "cmp", indexes_cut = cmps)
+cmps = cmps[::20]
 
-mng.show_trace_header(data_cut)
+cmps = 191
 
-print(mng.get_keyword_indexes(data_cut, key = "cmp"))
-
-view.gather(data, key = "cmp")
+stk.interactive_velocity_analysis(data_muted, indexes = cmps)

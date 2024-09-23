@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from toolbox import managing as mng
 
 @nb.jit(nopython = True, parallel = True)
-def radon_forward(seismic, dt, times, offsets, velocities, style):
+def radon_forward(seismic : np.ndarray, dt : float, times : np.ndarray, offsets : np.ndarray, velocities : np.ndarray, style : str) -> np.ndarray:
 
     Nt = len(times)
     Nh = len(offsets)
@@ -43,7 +43,7 @@ def radon_forward(seismic, dt, times, offsets, velocities, style):
     return domain
 
 @nb.jit(nopython = True, parallel = True)
-def radon_adjoint(domain, dt, times, offsets, velocities, style):
+def radon_adjoint(domain : np.ndarray, dt : float, times : np.ndarray, offsets : np.ndarray, velocities : np.ndarray, style : str) -> np.ndarray:
 
     Nt = len(times)
     Nh = len(offsets)

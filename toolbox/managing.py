@@ -30,18 +30,12 @@ def __check_index(data : sgy.SegyFile, key : str, index : int ) -> None:
     
     all_indexes = get_keyword_indexes(data, key)
 
-    if isinstance(index, (np.ndarray, list)):
+    index = [index] if not isinstance(index, (np.ndarray, list)) else index 
 
-        for ind in index:
-            if ind not in all_indexes:
-                print(f"\033[31mIndex {ind} for key {key} is invalid!\033[m\
-                             \nPlease use the function \033[33mmng.get_keyword_indexes\033[m to choose a properly index.")
-                exit()
-    else:
-        
-        if index not in all_indexes:
-            print(f"\033[31mIndex {index} for key {key} is invalid!\033[m\
-                         \nPlease use the function \033[33mmng.get_keyword_indexes\033[m to choose a properly index.")
+    for ind in index:
+        if ind not in all_indexes:
+            print(f"\033[31mIndex {ind} for key {key} is invalid!\033[m\
+                            \nPlease use the function \033[33mmng.get_keyword_indexes\033[m to choose a properly index.")
             exit()
 
 def get_keyword_indexes(data : sgy.SegyFile, key : str) -> np.ndarray:
@@ -169,8 +163,6 @@ def gather_windowing(data : sgy.SegyFile, output_name : str, **kwargs) -> sgy.Se
     indexes_cut = kwargs.get("indexes_cut") if "indexes_cut" in kwargs else all_indexes
 
     __check_index(data, key, indexes_cut)
-
-    indexes_cut = [indexes_cut] if not isinstance(indexes_cut, (np.ndarray, list)) else indexes_cut 
 
     time_beg = kwargs.get("time_beg") if "time_beg" in kwargs else 0.0
     time_end = kwargs.get("time_end") if "time_end" in kwargs else (nt-1)*dt
