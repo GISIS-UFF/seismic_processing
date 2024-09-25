@@ -35,9 +35,9 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
     >>> stk.interactive_velocity_analysis(data, indexes = cmps)
 
     tutorial picking velocity
-    1)click on the map
+    1)click on the graphic
     2)after the points  placed press y and then enter
-    3) save is under maintenance
+    3)save is under maintenance
     
     
     """
