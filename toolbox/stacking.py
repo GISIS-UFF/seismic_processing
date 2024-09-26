@@ -34,10 +34,17 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
     
     >>> stk.interactive_velocity_analysis(data, indexes = cmps)
 
-    tutorial picking velocity
-    1)click on the graphic
-    2)after the points  placed press y and then enter
-    3)save is under maintenance
+    ### Tutorial for picking velocity:
+    
+    1) Click on the   semblance graphic.
+    2) After placing the points, press 'y' and then 'Enter'.
+    3) Save is currently under maintenance.
+    
+    This function explains the steps needed for velocity picking.
+
+    ### Returns:
+    
+    parameters.txt  (t,v)
     
     
     """
@@ -218,7 +225,7 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         fig.canvas.mpl_connect('button_press_event', onclick)
         fig.canvas.mpl_connect('key_press_event', onkeypress)
         fig.canvas.mpl_connect('key_press_event', on_key)
-        fig.canvas.mpl_connect('key_press_event', stop)
+        #fig.canvas.mpl_connect('key_press_event', stop)
         fig.canvas.mpl_connect('key_press_event', save)
         fig.canvas.mpl_connect('key_press_event', add)  
         plt.show()
