@@ -215,4 +215,11 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
     # fig.canvas.mpl_connect('key_press_event', add)  
     plt.show()
     
+def apply_normal_moveout():
+    # returns flat pre-stack cmp gathers
+    pass
+
+def stack_cmp_gathers():
+    # returns a post-stack seismic section 
+    pass
 
