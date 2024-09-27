@@ -185,7 +185,7 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                     p1=points[-1][0]
                     
 
-                    points.append((p0,min(times),))
+                    points.append((p0,min(tloc),))
                     points.append((p1,max(tloc)))
                     print(points)
                     xn = [p[0] for p in points]
