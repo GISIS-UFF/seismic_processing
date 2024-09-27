@@ -2,8 +2,8 @@ __pycache__
 *.png
 *.bin
 *.sgy
-#*.txt 
-#.TXT
+*.txt 
+.TXT
 *.pdf
 *.segy
 *.RPS

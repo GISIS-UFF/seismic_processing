@@ -180,6 +180,49 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
     fig.tight_layout()
     plt.show()
 
+def fold_geometry(data : sgy.SegyFile, **kwargs) -> None:
+    '''
+    Plot a fold map, cmp coodinates the current configuration according 
+    to a specific header keyword.
+    
+    ### Parameters:        
+    
+    data: segyio object.
+
+    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    
+    index: integer that select a common gather.  
+
+    ### Examples:
+
+    >>> view.fold_geometry(data)                           # plots first shot 
+    >>> view.fold_geometry(data, key = "off")              # plots first offset
+    >>> view.fold_geometry(data, key = "rec", index = 35)  # plots rec index 789
+    >>> view.fold_geometry(data, key = "cmp", index = 512) # plots cmp index 512
+    '''    
+
+    key = kwargs.get("key") if "key" in kwargs else "src"
+    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
+
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
+
+    fig, ax = plt.subplots(ncols = 1, nrows = 1, figsize = (15, 5))
+
+    cmp = data.attributes(21)[:] / data.attributes(69)[:]
+    cmpx,cmpt=np.unique(cmp,return_counts=True)
+
+    im = ax.scatter(cmpx, cmpt, c=cmpt, cmap='jet', label="CMPs")
+    ax.set_xlabel("Distance [km]", fontsize=15)
+    ax.set_ylabel("CDP Fold Geometry", fontsize=15)
+
+    cax = fig.colorbar(im, ax=ax)
+    cax.set_ticks(np.linspace(cmpt.min(), cmpt.max(), num=5).astype(int))
+    cax.set_label("CDP Fold Geometry", fontsize=15)
+
+    fig.tight_layout()
+    plt.show()
+
 def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     '''
     Plots the amplitude spectra for each trace in gather according to a specific header keyword. 

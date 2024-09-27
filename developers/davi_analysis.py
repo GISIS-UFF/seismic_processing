@@ -10,9 +10,9 @@ path.append("../")
 from toolbox import managing as mng
 from toolbox import visualizing as view
 
-data_file = "../data/overthrust_synthetic_seismic_data.sgy"
+PATH = "/home/malum/seismic_processing/data/overthrust_synthetic_seismic_data" 
 
-data = mng.import_sgy_file(data_file)
+data = mng.import_sgy_file(PATH)
 
 def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
 
@@ -20,6 +20,7 @@ def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
     polygons = []
     polygon_paths = []
     masked_image = None
+    ready = False  # Novo controle de fluxo
 
     def on_click(event):
         nonlocal current_clicks
@@ -40,7 +41,7 @@ def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
                 plt.draw()
 
     def on_key(event):
-        nonlocal current_clicks, polygons, polygon_paths
+        nonlocal current_clicks, polygons, polygon_paths, masked_image, ready  # Adicionar ready
         if event.key == 'n':
             if len(current_clicks) >= 3:
                 polygon = Polygon(current_clicks, closed=True, edgecolor='black', facecolor='cyan', alpha=0.3)
@@ -61,6 +62,7 @@ def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
                 gaussian_mask = gaussian_filter(gaussian_mask.astype(np.float32), sigma=7)
 
                 masked_image = np.abs(teste) * gaussian_mask
+                ready = True  # Marca o estado como pronto
 
                 fig, ax = plt.subplots(figsize=(5, 5))
                 ax.imshow(masked_image, aspect="auto", cmap="jet")
@@ -82,7 +84,7 @@ def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
     fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
 
     key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0]
+    index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(data, key)[0]
 
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
@@ -151,7 +153,7 @@ def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
 
     ax[1].cbar = fig.colorbar(fk, ax=ax[1])
     ax[1].cbar.set_label("Amplitude", fontsize=15) 
-    
+   
     cid_click = fig.canvas.mpl_connect('button_press_event', on_click)
     cid_key = fig.canvas.mpl_connect('key_press_event', on_key)
 
@@ -162,7 +164,7 @@ def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
 
 def fold_geometry(data : sgy.SegyFile, **kwargs) -> None:
     '''
-    Plot geometry, cmp coodinates the current configuration according 
+    Plot a fold map, cmp coodinates the current configuration according 
     to a specific header keyword.
     
     ### Parameters:        
@@ -175,10 +177,10 @@ def fold_geometry(data : sgy.SegyFile, **kwargs) -> None:
 
     ### Examples:
 
-    >>> view.geometry(data)                           # plots first shot 
-    >>> view.geometry(data, key = "off")              # plots first offset
-    >>> view.geometry(data, key = "rec", index = 35)  # plots rec index 789
-    >>> view.geometry(data, key = "cmp", index = 512) # plots cmp index 512
+    >>> view.fold_geometry(data)                           # plots first shot 
+    >>> view.fold_geometry(data, key = "off")              # plots first offset
+    >>> view.fold_geometry(data, key = "rec", index = 35)  # plots rec index 789
+    >>> view.fold_geometry(data, key = "cmp", index = 512) # plots cmp index 512
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
@@ -207,4 +209,5 @@ mng.show_trace_header(data)
 
 masked_image = fourier_fk_domain(data)
 
-fold_geometry(data, key = "rec", index = 35)
+# fold_geometry(data, key = "rec", index = 35)
+
