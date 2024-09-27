@@ -92,6 +92,7 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
             semblance = np.abs(np.gradient(semblance, axis = 0))
 
             semblance = gaussian_filter(semblance, sigma = 5.0)
+            print(semblance.shape)
 
         def onclick(event):
             
@@ -185,7 +186,7 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                     
 
                     points.append((p0,min(times),))
-                    points.append((p1,np.max(times)))
+                    points.append((p1,max(tloc)))
                     print(points)
                     xn = [p[0] for p in points]
                     yn = [p[1] for p in points]
