@@ -8,9 +8,9 @@ from scipy.ndimage import gaussian_filter
 from toolbox import managing as mng
 from toolbox import filtering as filt
 
-ponto_parada= None
+stop_point= None
 interpolated_line = None
-points=[]
+
 
 def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **kwargs):
     """
@@ -56,21 +56,23 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
     indexes = [indexes] if not isinstance(indexes, (np.ndarray, list)) else indexes 
 
     mng.__check_index(data, key, indexes)
+    
+    vmin = kwargs.get("vmin") if "vmin" in kwargs else 1000.0
+    vmax = kwargs.get("vmax") if "vmax" in kwargs else 3000.0 
+    nvel = kwargs.get("dv") if "dv" in kwargs else 101
+
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+
+    times = np.arange(nt) * dt
+    velocities = np.linspace(vmin, vmax, nvel)
     for k in indexes:
+        points=[]
         print(k)
-        vmin = kwargs.get("vmin") if "vmin" in kwargs else 1000.0
-        vmax = kwargs.get("vmax") if "vmax" in kwargs else 3000.0 
-        nvel = kwargs.get("dv") if "dv" in kwargs else 101
-
-        nt = data.attributes(115)[0][0]
-        dt = data.attributes(117)[0][0] * 1e-6
-
-        times = np.arange(nt) * dt
-        velocities = np.linspace(vmin, vmax, nvel)
-
         for index in [k]:
 
-            traces = np.where(data.attributes(byte)[:] == index)[0]  
+            traces = np.where(data.attributes(byte)[:] == index)[0]
+            
             
             offsets = data.attributes(37)[traces] / data.attributes(69)[traces]
             
@@ -93,13 +95,14 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
 
         def onclick(event):
             
-            global ponto_parada
+            global stop_point
             
             if event.inaxes is not None:
             
                 x, y = event.xdata, event.ydata
-                if ponto_parada is None:
+                if stop_point is None:
                     points.append((x, y))
+                    print(points)
                     plt.plot(x, y, 'ro')
                     plt.draw()
                     
@@ -172,15 +175,17 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         
         def save(event):
             if event.key=='c':
-                np.savetxt("coordernada", points, fmt = "%.6f")
+                np.savetxt("parameters.txt", points, fmt = "%.6f")
         
         
         def add(event):
             if event.key=='y':
                     p0=points[0][0]
                     p1=points[-1][0]
+                    
+
                     points.append((p0,min(times),))
-                    points.append((p1,max(times)))
+                    points.append((p1,np.max(times)))
                     print(points)
                     xn = [p[0] for p in points]
                     yn = [p[1] for p in points]
@@ -210,7 +215,6 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         im2 = ax[1].imshow(semblance, aspect = 'auto', cmap = 'jet')
         ax[1].set_xlabel('Velocity [m/s]', fontsize = 15) 
         ax[1].set_ylabel('Time [s]', fontsize = 15)
-
         ax[1].grid()
         ax[1].set_xticks(vloc)
         ax[1].set_yticks(tloc)
@@ -220,6 +224,8 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         ax[1].set_ylabel('Time [s]', fontsize = 15)
         cbar2 = fig.colorbar(im2, ax = ax[1])
         cbar2.set_label("Amplitude", fontsize = 10)
+
+        
         
         fig.tight_layout()
         fig.canvas.mpl_connect('button_press_event', onclick)
