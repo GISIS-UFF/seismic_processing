@@ -2,7 +2,7 @@ import numpy as np
 import segyio as sgy
 import matplotlib.pyplot as plt
 
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import interp1d
 from scipy.ndimage import gaussian_filter
 
 from toolbox import managing as mng
@@ -158,13 +158,14 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                     points_sorted = sorted(points, key = lambda p: p[1])
                     x,y = zip(*points_sorted)
                 
-                    cs = CubicSpline(y, x, bc_type='natural')
+                    cs = interp1d(y, x, kind='linear')
                     ynew = np.linspace(min(y), max(y), num = 500)
                     xnew = cs(ynew)
+                    xsmooth = gaussian_filter(xnew, sigma=7)
                     if interpolated_line:
                         interpolated_line.remove()
 
-                    interpolated_line, = plt.plot(xnew, ynew)
+                    interpolated_line, = plt.plot(xsmooth, ynew)
                     plt.draw()
 
             elif event.key =='m':
