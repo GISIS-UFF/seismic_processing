@@ -5,9 +5,9 @@ from toolbox import stacking as stk
 from toolbox import filtering as filt
 from toolbox import visualizing as view
 
-data = mng.import_sgy_file("../data/mobil_viking_graben_north_sea.sgy")
+data = mng.import_sgy_file("../data/synthetic/synthetic_data_raw.sgy")
 
-data_muted = filt.mute(data, time = 0.2, velocity = 1600)
+data_muted = filt.mute(data, time = 0.2, velocity = 1200)
 
 view.gather(data_muted, key = "cmp")
 
