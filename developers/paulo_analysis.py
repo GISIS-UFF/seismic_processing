@@ -7,13 +7,9 @@ from toolbox import visualizing as view
 
 data = mng.import_sgy_file("../data/synthetic/synthetic_data_raw.sgy")
 
-data_muted = filt.mute(data, time = 0.2, velocity = 1200)
+data_muted = filt.mute(data, time = 0.2, velocity = 800)
 
 view.gather(data_muted, key = "cmp")
-
-cmps = mng.get_full_fold_cmps(data_muted)
-
-cmps = cmps[::20]
 
 cmps = 191
 

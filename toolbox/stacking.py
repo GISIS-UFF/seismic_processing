@@ -66,33 +66,32 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
 
     times = np.arange(nt) * dt
     velocities = np.linspace(vmin, vmax, nvel)
-    for k in indexes:
-        points=[]
-        print(k)
-        for index in [k]:
 
-            traces = np.where(data.attributes(byte)[:] == index)[0]
-            
-            
-            offsets = data.attributes(37)[traces] / data.attributes(69)[traces]
-            
-            seismic = np.zeros((nt, len(traces)))
-
-            gain = times ** 2
-
-            for i in range(len(traces)):
-                seismic[:,i] = data.trace.raw[traces[i]] * gain
-
-            domain = filt.radon_forward(seismic, dt, times, offsets, velocities, style = "hyperbolic")
+    for index in indexes:
         
-            semblance = np.sum(np.abs(domain)**2, axis = 1)
+        points=[]
 
-            semblance = gaussian_filter(semblance, sigma = 3.0)
+        traces = np.where(data.attributes(byte)[:] == index)[0]   
+            
+        offsets = data.attributes(37)[traces] / data.attributes(69)[traces]
+        
+        seismic = np.zeros((nt, len(traces)))
 
-            semblance = np.abs(np.gradient(semblance, axis = 0))
+        gain = times ** 2
 
-            semblance = gaussian_filter(semblance, sigma = 5.0)
-            print(semblance.shape)
+        for i in range(len(traces)):
+            seismic[:,i] = data.trace.raw[traces[i]] * gain
+
+        domain = filt.radon_forward(seismic, dt, times, offsets, velocities, style = "hyperbolic")
+    
+        semblance = np.sum(np.abs(domain)**2, axis = 1)
+
+        semblance = gaussian_filter(semblance, sigma = 3.0)
+
+        semblance = np.abs(np.gradient(semblance, axis = 0))
+
+        semblance = gaussian_filter(semblance, sigma = 5.0)
+#        print(semblance.shape)
 
         def onclick(event):
             
@@ -103,10 +102,11 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                 x, y = event.xdata, event.ydata
                 if stop_point is None:
                     points.append((x, y))
-                    print(points)
+                    # print(points)
                     plt.plot(x, y, 'ro')
                     plt.draw()
-                    
+                    # print(velocities[int(x)], times[int(y)])    
+
                 else:
                     points.append((x, y))
                     plt.plot(x, y, 'bo')
@@ -177,7 +177,8 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         
         def save(event):
             if event.key=='c':
-                np.savetxt("parameters.txt", points, fmt = "%.6f")
+                points
+                np.savetxt(f"picks_cmp_{index}.txt", points, fmt = "%.6f")
         
         
         def add(event):
