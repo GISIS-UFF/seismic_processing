@@ -70,6 +70,7 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
     for index in indexes:
         
         points=[]
+        points_vxt=np.array([]).reshape(0, 2)
 
         traces = np.where(data.attributes(byte)[:] == index)[0]   
             
@@ -102,10 +103,16 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                 x, y = event.xdata, event.ydata
                 if stop_point is None:
                     points.append((x, y))
-                    # print(points)
+                    nonlocal points_vxt
+                    add= np.array([[velocities[int(x)], times[int(y)]]])
+                    
+                    points_vxt = np.append(points_vxt,add,axis=0)
+                    print(points_vxt)
+                    
+                    
                     plt.plot(x, y, 'ro')
                     plt.draw()
-                    # print(velocities[int(x)], times[int(y)])    
+                    print(velocities[int(x)], times[int(y)])    
 
                 else:
                     points.append((x, y))
@@ -177,19 +184,28 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         
         def save(event):
             if event.key=='c':
-                points
-                np.savetxt(f"picks_cmp_{index}.txt", points, fmt = "%.6f")
+                nonlocal points_vxt
+                sorted_indices = np.argsort(points_vxt[:, 0])
+                points_vxt = points_vxt[sorted_indices]
+                np.savetxt(f"picks_cmp_{index}.txt", points_vxt, fmt = "%.4f",delimiter=',')
         
         
         def add(event):
             if event.key=='y':
+                    nonlocal points_vxt
                     p0=points[0][0]
                     p1=points[-1][0]
-                    
+                    #print(points_vxt)
+                    first_point=points_vxt[0]
+                    last_point=points_vxt[-1]
 
                     points.append((p0,min(tloc),))
                     points.append((p1,max(tloc)))
-                    print(points)
+                    add_points= np.array([(last_point[0], max(times)),(first_point[0], min(times))])
+                    
+                    points_vxt=np.concatenate((points_vxt,add_points),axis=0)
+                    
+                    
                     xn = [p[0] for p in points]
                     yn = [p[1] for p in points]
                     plt.plot(xn,yn,'ro')
