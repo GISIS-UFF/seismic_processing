@@ -30,6 +30,7 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
 
     nvel: total velocity parameters.
 
+
     ### Examples:
     
     >>> stk.interactive_velocity_analysis(data, indexes = cmps)
@@ -67,10 +68,12 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
     times = np.arange(nt) * dt
     velocities = np.linspace(vmin, vmax, nvel)
 
+    all_picks = [] # list with all the picks
+
     for index in indexes:
         
         points=[]
-        points_vxt=np.array([]).reshape(0, 2)
+        points_vxt=np.array([]).reshape(0, 3) # added column to put the cmp info
 
         traces = np.where(data.attributes(byte)[:] == index)[0]   
             
@@ -104,7 +107,7 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                 if stop_point is None:
                     points.append((x, y))
                     nonlocal points_vxt
-                    add= np.array([[velocities[int(x)], times[int(y)]]])
+                    add= np.array([[index, velocities[int(x)], times[int(y)]]]) # added index
                     
                     points_vxt = np.append(points_vxt,add,axis=0)
                     print(points_vxt)
@@ -185,10 +188,11 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         def save(event):
             if event.key=='c':
                 nonlocal points_vxt
-                sorted_indices = np.argsort(points_vxt[:, 0])
+                sorted_indices = np.argsort(points_vxt[:, 2])
                 points_vxt = points_vxt[sorted_indices]
-                np.savetxt(f"picks_cmp_{index}.txt", points_vxt, fmt = "%.4f",delimiter=',')
-        
+                
+                all_picks.extend(points_vxt.tolist()) # add to all
+                print(f"Picks for CMP {index} are saved.")
         
         def add(event):
             if event.key=='y':
@@ -201,9 +205,9 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
 
                     points.append((p0,min(tloc),))
                     points.append((p1,max(tloc)))
-                    add_points= np.array([(last_point[0], max(times)),(first_point[0], min(times))])
+                    add_points = np.array([[index, last_point[1], max(times)], [index, first_point[1], min(times)]]) # added index
                     
-                    points_vxt=np.concatenate((points_vxt,add_points),axis=0)
+                    points_vxt=np.concatenate((points_vxt,add_points),axis=0) 
                     
                     
                     xn = [p[0] for p in points]
@@ -254,7 +258,12 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         fig.canvas.mpl_connect('key_press_event', save)
         fig.canvas.mpl_connect('key_press_event', add)  
         plt.show()
-    
+
+    all_picks = np.array(all_picks)
+    np.savetxt("all_picks.txt", all_picks, fmt="%d,%.4f,%.4f", delimiter=',')
+    print("File 'all_picks.txt' saved with all picks.")
+
+
 def apply_normal_moveout():
     # returns flat pre-stack cmp gathers
     pass
