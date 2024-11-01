@@ -699,3 +699,62 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
         
     fig.tight_layout()
     plt.show()    
+
+def velocity_model(data : sgy.SegyFile, picks_file : str) -> None:
+    '''
+    Plot a velocity model using a velocity picks file.
+
+    ### Mandatory Parameters:
+
+    data: segyio object.
+    picks_file: string, path to a text file with velocity picks in the format CMP, Velocity, Time.
+
+    ### Examples:
+
+    >>> velocity_model(data, picks_file = "all_picks.txt")                            
+
+    '''
+    picks = np.loadtxt(picks_file, delimiter=",")
+    cmp_picks = picks[:, 0]
+    vel_picks = picks[:, 1]
+    time_picks = picks[:, 2]   
+
+    if picks.size == 0:
+        print(f"Warning: The file '{picks_file}' is empty or contains no valid data.")
+        return
+
+    key = "cmp"
+    cmp_indexes = mng.get_keyword_indexes(data, key)
+    
+    nt = data.attributes(115)[0][0]  
+    dt = data.attributes(117)[0][0] * 1e-6 
+
+    times = np.arange(nt) * dt
+
+    vmin = vel_picks.min()
+    vmax = vel_picks.max()
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    scatter = ax.scatter(cmp_picks, time_picks, c=vel_picks, cmap="jet", vmin=vmin, vmax=vmax, marker='o', s=20, edgecolor="k", label="Velocity Picks")
+    cbar = fig.colorbar(scatter, ax=ax)
+    cbar.set_label("Velocity [m/s]", fontsize=12)
+
+    ax.set_xlim(cmp_indexes.min(), cmp_indexes.max())
+    ax.set_ylim(times[-1], times[0])
+
+    ax.set_xticks(np.linspace(cmp_indexes.min(), cmp_indexes.max(), num=10))
+    ax.set_yticks(np.linspace(times[-1], times[0], num=11))
+
+    
+    
+    ax.set_xlabel("CMP", fontsize=12)
+    ax.set_ylabel("Time [s]", fontsize=12)
+    ax.set_title("Velocity Model", fontsize=14)
+
+    ax.xaxis.set_label_position('top')
+    ax.xaxis.tick_top()
+
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
