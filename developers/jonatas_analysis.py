@@ -1,16 +1,120 @@
-from sys import path
-path.append("../")
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import butter, lfilter
+# from toolbox import filtering
 
-from toolbox import managing as mng
-from toolbox import filtering
-from toolbox import visualizing as view
+def butter_bandpass_filter(input_trace, lowcut, highcut, fs, order=6):
+    b, a = butter(order, [lowcut, highcut], fs=fs, btype='band')
+    return lfilter(b, a, input_trace)
 
-data = mng.import_sgy_file("../data/Buzios_2D_streamer_6Km_GISIS_dada_broadbandwave.segy")
+def time_variant_filtering(signal, lowcut_freqs, highcut_freqs, durations, fs):
+    """
+    Applies time-varying filtering to a signal.
 
-velocity = 1800
-t0 = 0.8
+    Parameters:
+        signal (numpy array): Entry signal.
+        lowcut_freqs (list): Lower cutoff frequencies for each range.
+        highcut_freqs (list): Upper cutoff frequencies for each range.
+        durations (list): Duration of intervals
+        fs (int): Sampling rate.
 
-filtering.mute(data, velocity, t0)
+    Returns:
+        filtered_signal (numpy array): Filtered signal.
+    """
+    nt = len(signal)  
+    
+    filtered_signal = np.zeros(nt) 
+
+    # Calculate the start and end times of intervals
+    start_times = [0] + np.cumsum(durations).tolist()[:-1]  # Start of intervals
+    end_times = np.cumsum(durations).tolist()  # End of intervals
+
+    # Filtering the signal at each interval using a loop
+    for i in range(len(lowcut_freqs)):
+        start_sample = int(start_times[i] * fs)  # Time Conversion for Sample Index
+        end_sample = int(end_times[i] * fs) if i < len(end_times) else nt  # Checks if the index is within the limit
+        # Apply the filter to the range
+        filtered_signal[start_sample:end_sample] = butter_bandpass_filter( signal[start_sample:end_sample], lowcut_freqs[i], highcut_freqs[i], fs)
+
+    return filtered_signal
+
+# Example of using the function
+if __name__ == "__main__":
+    signal = np.loadtxt('../data/trace_test.txt')
+
+    fs = 512  
+    nt = len(signal)
+    t = np.arange(nt) * 1/fs
+
+    # Cutoff frequencies for different ranges
+    lowcut_freqs = [10, 20, 30]  # Minimum frequencies for each interval
+    highcut_freqs = [200, 100, 50]  # Maximum frequencies for each interval
+
+    # Duration of intervals (in seconds)
+    durations = [3, 2, 5]  # 0-3s, 3-5s, 5-10s
+
+    # time_variant_filtering
+    filtered_signal = time_variant_filtering(signal, lowcut_freqs, highcut_freqs, durations, fs)
+
+    # FFT
+    freq = np.fft.fftfreq(nt, 1/fs)
+    mask = freq > 0
+    
+    fft_signal = np.abs(np.fft.fft(signal))
+    fft_filtered_signal = np.abs(np.fft.fft(filtered_signal))
+
+
+    # Plot
+    plt.figure(figsize=(12, 7))
+
+    plt.subplot(221)
+    plt.plot(t, signal, label=' Original Trace')
+    plt.title('Original Trace')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+    plt.grid(True)
+
+    plt.subplot(222)
+    plt.plot(freq[mask], fft_signal[mask], label=' Original Trace FFT')
+    plt.title(' Original Trace FFT')
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('Amplitude')
+    plt.grid(True)
+    plt.xlim(0,150)
+
+    plt.subplot(223)
+    plt.plot(t, filtered_signal, label='Filtered Trace')
+    plt.title('Filtered Trace')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+    plt.grid(True)
+
+    plt.subplot(224)
+    plt.plot(freq[mask], fft_filtered_signal[mask], label='Filtered Trace FFT')
+    plt.title('FFT do Sinal Filtrado')
+    plt.xlabel('Frequência (Hz)')
+    plt.ylabel('Magnitude')
+    plt.grid(True)
+    plt.xlim(0,150)
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+# from sys import path
+# path.append("../")
+
+# from toolbox import managing as mng
+# from toolbox import filtering
+# from toolbox import visualizing as view
+
+# data = mng.import_sgy_file("../data/Buzios_2D_streamer_6Km_GISIS_dada_broadbandwave.segy")
+
+# velocity = 1800
+# t0 = 0.8
+
+# filtering.mute(data, velocity, t0)
 
 # ---------------------------------------------------------
 # ---------------------------------------------------------
@@ -119,3 +223,4 @@ filtering.mute(data, velocity, t0)
 # key = 'cmp'
 # index = 1
 # filtering.radon_transform2(data2, key, index, style)
+
