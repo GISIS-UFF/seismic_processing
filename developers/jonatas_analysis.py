@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import butter, lfilter
+
 # from toolbox import filtering
 
 def butter_bandpass_filter(input_trace, lowcut, highcut, fs, order=6):
@@ -40,42 +41,95 @@ def time_variant_filtering(signal, lowcut_freqs, highcut_freqs, durations, fs):
 
 # Example of using the function
 if __name__ == "__main__":
-    signal = np.loadtxt('../data/trace_test.txt')
+    # signal = np.loadtxt('../data/trace_test.txt')
 
-    fs = 512  
-    nt = len(signal)
-    t = np.arange(nt) * 1/fs
+    # fs = 512  
+    # nt = len(signal)
+    # t = np.arange(nt) * 1/fs
+
+    nt = 6001
+    nx = 321
+    dt = 0.001
+    fs = 1/dt
+
+    data = np.reshape(np.fromfile('../data/elastic_iso_data_nStations321_nSamples6001_shot_6.bin', dtype=np.float32), (nx, nt))
+
+    # Aplicando o filtro no seismogram
+    data_filt = np.zeros_like(data)
+
+    for i in range(len(data[:,0])):
+            data_filt[i,:] = butter_bandpass_filter(data[i,:], lowcut= 5, highcut=300, fs=fs)
+
 
     # Cutoff frequencies for different ranges
-    lowcut_freqs = [10, 20, 30]  # Minimum frequencies for each interval
-    highcut_freqs = [200, 100, 50]  # Maximum frequencies for each interval
+    lowcut_freqs = [20, 10, 5]  # Minimum frequencies for each interval
+    highcut_freqs = [250, 230, 210]  # Maximum frequencies for each interval
 
     # Duration of intervals (in seconds)
-    durations = [3, 2, 5]  # 0-3s, 3-5s, 5-10s
+    durations = [2, 2, 4]  # 0-3s, 3-5s, 5-10s
+
+    data_filt2 = np.zeros_like(data)
+
+    for i in range(len(data[:,0])):
+            data_filt2[i,:] = time_variant_filtering(data[i,:], lowcut_freqs, highcut_freqs, durations, fs)
 
     # time_variant_filtering
-    filtered_signal = time_variant_filtering(signal, lowcut_freqs, highcut_freqs, durations, fs)
+    
+    scale = np.percentile(data, 95)
+    scale_filt = np.percentile(data_filt, 95)
+    scale_filt2 = np.percentile(data_filt2, 95)
+
+    plt.figure()
+
+    plt.subplot(131)
+    plt.imshow(data.T, aspect='auto', cmap='Grays', vmin=-scale, vmax=scale)
+
+    plt.subplot(132)
+    plt.imshow(data_filt.T, aspect='auto', cmap='Grays', vmin=-scale_filt, vmax=scale_filt)
+
+    plt.subplot(133)
+    plt.imshow(data_filt2.T, aspect='auto', cmap='Grays', vmin=-scale_filt2, vmax=scale_filt2)
+
+    plt.tight_layout()
+
+    plt.show()
+
+
+    exit()
+    trace = data[25,:]
+    time = np.arange(nt) * dt
+    
+
+    # Cutoff frequencies for different ranges
+    lowcut_freqs = [10, 20, 190]  # Minimum frequencies for each interval
+    highcut_freqs = [200, 100, 200]  # Maximum frequencies for each interval
+
+    # Duration of intervals (in seconds)
+    durations = [1, 1, 4]  # 0-3s, 3-5s, 5-10s
+
+    # time_variant_filtering
+    filtered_trace = time_variant_filtering(trace, lowcut_freqs, highcut_freqs, durations, fs)
 
     # FFT
-    freq = np.fft.fftfreq(nt, 1/fs)
+    freq = np.fft.fftfreq(nt, dt)
     mask = freq > 0
     
-    fft_signal = np.abs(np.fft.fft(signal))
-    fft_filtered_signal = np.abs(np.fft.fft(filtered_signal))
+    fft_trace = np.abs(np.fft.fft(trace))
+    fft_filtered_trace = np.abs(np.fft.fft(filtered_trace))
 
 
     # Plot
     plt.figure(figsize=(12, 7))
 
     plt.subplot(221)
-    plt.plot(t, signal, label=' Original Trace')
+    plt.plot(time, trace, label=' Original Trace')
     plt.title('Original Trace')
     plt.xlabel('Time [s]')
     plt.ylabel('Amplitude')
     plt.grid(True)
 
     plt.subplot(222)
-    plt.plot(freq[mask], fft_signal[mask], label=' Original Trace FFT')
+    plt.plot(freq[mask], fft_trace[mask], label=' Original Trace FFT')
     plt.title(' Original Trace FFT')
     plt.xlabel('Frequency [Hz]')
     plt.ylabel('Amplitude')
@@ -83,14 +137,14 @@ if __name__ == "__main__":
     plt.xlim(0,150)
 
     plt.subplot(223)
-    plt.plot(t, filtered_signal, label='Filtered Trace')
+    plt.plot(time, filtered_trace, label='Filtered Trace')
     plt.title('Filtered Trace')
     plt.xlabel('Time [s]')
     plt.ylabel('Amplitude')
     plt.grid(True)
 
     plt.subplot(224)
-    plt.plot(freq[mask], fft_filtered_signal[mask], label='Filtered Trace FFT')
+    plt.plot(freq[mask], fft_filtered_trace[mask], label='Filtered Trace FFT')
     plt.title('FFT do Sinal Filtrado')
     plt.xlabel('Frequência (Hz)')
     plt.ylabel('Magnitude')
@@ -99,6 +153,121 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     plt.show()
+
+
+    ### TESTANDO O CÓDIGO
+
+    trace1 = trace[0:2000]
+    trace2 = trace[2000:4000]
+    trace3 = trace[4000:]
+
+    filtered_trace1 = filtered_trace[0:2000]
+    filtered_trace2 = filtered_trace[2000:4000]
+    filtered_trace3 = filtered_trace[4000:]
+
+    freq1 = np.fft.fftfreq(len(trace1), dt)
+    mask1 = freq1 > 0
+    
+    fft_trace1 = np.abs(np.fft.fft(trace1))
+    fft_filtered_trace1 = np.abs(np.fft.fft(filtered_trace1))
+
+
+    freq2 = np.fft.fftfreq(len(trace2), dt)
+    mask2 = freq2 > 0
+    
+    fft_trace2 = np.abs(np.fft.fft(trace2))
+    fft_filtered_trace2 = np.abs(np.fft.fft(filtered_trace2))
+
+    freq3 = np.fft.fftfreq(len(trace3), dt)
+    mask3 = freq3 > 0
+    
+    fft_trace3 = np.abs(np.fft.fft(trace3))
+    fft_filtered_trace3 = np.abs(np.fft.fft(filtered_trace3))
+
+
+    plt.figure()
+    
+    plt.subplot(231)
+    plt.title('1º Intervalo Bruto')
+    plt.plot(time[0:2000], trace1)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(232)
+    plt.title('2º Intervalo Bruto')
+    plt.plot(time[2000:4000], trace2)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(233)
+    plt.title('3º Intervalo bruto')
+    plt.plot(time[4000:], trace3)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(234)
+    plt.title('1º Intervalo filt')
+    plt.plot(time[0:2000], filtered_trace1)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(235)
+    plt.title('2º Intervalo filt')
+    plt.plot(time[2000:4000], filtered_trace2)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(236)
+    plt.title('3º Intervalo filt')
+    plt.plot(time[4000:], filtered_trace3)
+    plt.xlabel('Time [s]')
+    plt.ylabel('Amplitude')
+
+    plt.tight_layout()
+
+    plt.figure()
+    
+    plt.subplot(231)
+    plt.title('1º Intervalo Bruto')
+    plt.plot(freq1[mask1], fft_trace1[mask1])
+    plt.xlabel('Freq [Hz]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(232)
+    plt.title('2º Intervalo Bruto')
+    plt.plot(freq2[mask2], fft_trace2[mask2])
+    plt.xlabel('Freq [Hz]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(233)
+    plt.title('3º Intervalo bruto')
+    plt.plot(freq3[mask3], fft_trace3[mask3])
+    plt.xlabel('Freq [Hz]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(234)
+    plt.title('1º Intervalo filt')
+    plt.plot(freq1[mask1], fft_filtered_trace1[mask1])
+    plt.xlabel('Freq [Hz]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(235)
+    plt.title('2º Intervalo filt')
+    plt.plot(freq2[mask2], fft_filtered_trace2[mask2])
+    plt.xlabel('Freq [Hz]')
+    plt.ylabel('Amplitude')
+
+    plt.subplot(236)
+    plt.title('3º Intervalo filt')
+    plt.plot(freq3[mask3], fft_filtered_trace3[mask3])
+    plt.xlabel('Freq [Hz]')
+    plt.ylabel('Amplitude')
+
+    plt.tight_layout()
+
+    plt.show()
+
+
 
 
 
