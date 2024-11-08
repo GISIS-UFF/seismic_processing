@@ -3,8 +3,10 @@ import segyio as sgy
 
 import matplotlib.pyplot as plt
 
+from scipy.interpolate import griddata
 from toolbox import managing as mng
 from toolbox import filtering as filt
+
 
 def gather(data : sgy.SegyFile, **kwargs) -> None:
     '''
@@ -723,9 +725,20 @@ def velocity_model(data : sgy.SegyFile, picks_file : str) -> None:
         print(f"Warning: The file '{picks_file}' is empty or contains no valid data.")
         return
 
-    key = "cmp"
-    cmp_indexes = mng.get_keyword_indexes(data, key)
-    
+    cmp_indexes = mng.get_keyword_indexes(data, "cmp")
+    cmp_min = cmp_indexes.min()
+    cmp_max = cmp_indexes.max()
+
+    pick_min = picks[cmp_picks == cmp_picks.min()]
+    pick_max = picks[cmp_picks == cmp_picks.max()]
+    pick_min[:, 0] = cmp_min
+    pick_max[:, 0] = cmp_max
+
+    picks = np.vstack((picks, pick_min, pick_max))
+    cmp_picks = picks[:, 0]
+    vel_picks = picks[:, 1]
+    time_picks = picks[:, 2]
+
     nt = data.attributes(115)[0][0]  
     dt = data.attributes(117)[0][0] * 1e-6 
 
@@ -734,16 +747,24 @@ def velocity_model(data : sgy.SegyFile, picks_file : str) -> None:
     vmin = vel_picks.min()
     vmax = vel_picks.max()
 
+    cmp_grid = np.linspace(cmp_min, cmp_max, 300)
+    time_grid = np.linspace(times[0], times[-1], 300)
+    cmp_grid, time_grid = np.meshgrid(cmp_grid, time_grid)    
+
+    velocity_grid = griddata((cmp_picks, time_picks), vel_picks, (cmp_grid, time_grid), method='linear')
+
     fig, ax = plt.subplots(figsize=(10, 6))
 
+    img = ax.imshow(velocity_grid, extent=(cmp_min, cmp_max, times[-1], times[0]), aspect='auto', cmap="jet", vmin=vmin, vmax=vmax)
+
     scatter = ax.scatter(cmp_picks, time_picks, c=vel_picks, cmap="jet", vmin=vmin, vmax=vmax, marker='o', s=20, edgecolor="k", label="Velocity Picks")
-    cbar = fig.colorbar(scatter, ax=ax)
+    cbar = fig.colorbar(img, ax=ax) 
     cbar.set_label("Velocity [m/s]", fontsize=12)
 
     ax.set_xlim(cmp_indexes.min(), cmp_indexes.max())
     ax.set_ylim(times[-1], times[0])
 
-    ax.set_xticks(np.linspace(cmp_indexes.min(), cmp_indexes.max(), num=10))
+    ax.set_xticks(np.linspace(cmp_min, cmp_max, num=10))
     ax.set_yticks(np.linspace(times[-1], times[0], num=11))
 
     
