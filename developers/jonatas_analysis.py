@@ -38,7 +38,7 @@ def time_variant_filtering(signal, lowcut_freqs, highcut_freqs, durations, fs):
 
     return filtered_signal
 
-def time_variant_filtering2(data, dt, start_normalization, num_windows):
+def time_variant_filtering2(data, dt, normalization_start_time, num_windows):
     """
     Apply time-variant filtering to normalize the amplitude of a signal in specific time windows.
     The upper limit uses np.max(data), while the lower limit uses np.min(data) for normalization.
