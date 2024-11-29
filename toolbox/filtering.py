@@ -350,14 +350,17 @@ def mute(data_input : sgy.SegyFile, **kwargs) -> None:
     
     return data_output
 
-def apply_agc(data, agc_operator: int, key: str, index: int):
-    
+def apply_agc(data, agc_operator: int, key: str, index: int, **kwargs):
+   
+    #TODO: add docstring
     mng.__check_keyword(key)
     mng.__check_index(data, key, index)
 
     byte = mng.__keywords.get(key)
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
+
+    output_name = kwargs.get("output_name") if "output_name" in kwargs else f"agc_seismic.sgy"
 
     traces = np.where(data.attributes(byte)[:] == index)[0]
 
@@ -378,5 +381,7 @@ def apply_agc(data, agc_operator: int, key: str, index: int):
 
             l, h, mid = l + 1, h + 1, mid + 1
 
-    return seismic
+    data_output = sgy.open(output_name, "r+", ignore_geometry = True)
+    data_output.header = data.header
+    return data_output
 
