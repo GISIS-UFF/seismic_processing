@@ -350,27 +350,27 @@ def mute(data_input : sgy.SegyFile, **kwargs) -> None:
     
     return data_output
 
-def apply_agc(data, agc_operator: int, key: str, index: int, **kwargs):
+def apply_agc(data: sgy.SegyFile , agc_operator: int, **kwargs):
    
     #TODO: add docstring
-    mng.__check_keyword(key)
-    mng.__check_index(data, key, index)
+   
+  
 
-    byte = mng.__keywords.get(key)
+    
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
 
     output_name = kwargs.get("output_name") if "output_name" in kwargs else f"agc_seismic.sgy"
 
-    traces = np.where(data.attributes(byte)[:] == index)[0]
+    traces = data.tracecount
 
-    seismic = np.zeros((nt, len(traces)))
+    seismic = np.zeros((nt, traces))
 
     sliding_window = int(agc_operator / (1e3 * dt))
-    for i in range(len(traces)):
-        seismic[:, i] = data.trace.raw[traces[i]] 
+    for i in range(traces):
+        seismic[:, i] = data.trace.raw[i] 
 
-    for i in range(len(traces)):
+    for i in range(traces):
         trace = seismic[:, i]
         l, h = 0, sliding_window - 1
         mid = (l + h) // 2
@@ -381,6 +381,9 @@ def apply_agc(data, agc_operator: int, key: str, index: int, **kwargs):
 
             l, h, mid = l + 1, h + 1, mid + 1
 
+        
+
+    sgy.tools.from_array2D(output_name, seismic.T)
     data_output = sgy.open(output_name, "r+", ignore_geometry = True)
     data_output.header = data.header
     return data_output

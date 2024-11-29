@@ -264,9 +264,93 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
     print("File 'all_picks.txt' saved with all picks.")
 
 
-def apply_normal_moveout():
-    # returns flat pre-stack cmp gathers
-    pass
+def apply_normal_moveout(data,index,picks):
+    
+    text=np.loadtxt(picks,delimiter=",")
+    
+    vrms= text[:,1].astype(float)
+    
+    tint=text[:,2].astype(float)
+    
+    byte = mng.__keywords.get('cmp')
+    
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+    
+    nt = data.attributes(115)[0][0]
+    
+    dt = data.attributes(117)[0][0] * 1e-6
+    
+    
+    x =data.attributes(37)[traces] /data.attributes(69)[traces]
+
+    mng.__check_keyword('cmp')
+    
+    mng.__check_index(data, 'cmp', index)
+    
+    seismic = np.zeros((nt, len(traces)))
+
+    
+    print(len(traces),len(x))
+    for i in range(len(traces)):
+        seismic[:,i] = data.trace.raw[traces[i]] 
+    
+    model_nmo = np.zeros(nt) + vrms[-1]
+    print(len(x))
+
+    times = np.arange(nt) * dt
+    for i in range(len(vrms)):
+        model_nmo[int(np.sum(tint[:i]/dt)):int(np.sum(tint[:i+1]/dt))] = vrms[i]
+        
+        
+        seismic_nmo = np.zeros_like(seismic)
+
+    for i in range(nt):
+	    
+        curve = np.array(np.sqrt((i*dt)**2 + x**2 / model_nmo[i]**2) / dt, dtype = int) 	
+            
+
+        for j in range(len(x)):
+            if curve[j]<nt:
+                seismic_nmo[i,j]=seismic[curve[j],j]
+        
+       
+		
+    # tmute = x / 500
+    # for j in range(len(x)):
+    #     seismic_nmo[:int(tmute[j]/dt),j] = 0.0
+
+    #trace = np.sum(seismic_nmo, axis = 1)
+    fig, ax = plt.subplots(nrows = 1, ncols = 3, figsize = (15, 9))
+    ax[0].plot(model_nmo, times)
+    ax[0].set_ylim([0,5])
+    ax[0].invert_yaxis()
+    ax[1].imshow(seismic, aspect = "auto", cmap = "Greys")
+    ax[1].set_xticks(np.linspace(0, len(traces), 5))
+    ax[1].set_xticklabels(np.linspace(0, len(traces)-1, 5,dtype = int) )
+
+    ax[1].set_yticks(np.linspace(0, nt, 11))
+    ax[1].set_yticklabels(np.linspace(0, nt-1, 11)*dt)
+
+    ax[1].set_title("CMP Gather", fontsize = 18)
+    ax[1].set_xlabel("x = Offset [m]", fontsize = 15)
+    ax[1].set_ylabel("t = TWT [s]", fontsize = 15)
+    ax[2].imshow(seismic_nmo, aspect = "auto", cmap = "Greys")
+
+    ax[2].set_xticks(np.linspace(0, len(traces), 5))
+    ax[2].set_xticklabels(np.linspace(0, len(traces)-1, 5))
+
+    ax[2].set_yticks(np.linspace(0, nt, 11))
+    ax[2].set_yticklabels(np.linspace(0, nt-1, 11)*dt)
+
+    ax[2].set_title("CMP Gather", fontsize = 18)
+    ax[2].set_xlabel("x = Offset [m]", fontsize = 15)
+    ax[2].set_ylabel("t = TWT [s]", fontsize = 15)
+
+    # ax[3].plot(trace, time)
+    # ax[3].set_ylim([0,5])
+    # ax[3].invert_yaxis()
+    plt.show()
+        
 
 def stack_cmp_gathers():
     # returns a post-stack seismic section 

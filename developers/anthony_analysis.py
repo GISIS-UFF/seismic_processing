@@ -19,22 +19,66 @@ input_file6 = "../data/difference"
 input_file7 = "../data/polandfilt"
 
 data = mng.import_sgy_file(input_file)
-
-print(f'numero de traço {data.tracecount}')
+#print(data.tracecount)
+#print(f'numero de traço {data.tracecount}')
 mng.show_trace_header(data)
 
-print(data.trace[0])
+#print(data.trace[0])
 key = 'cmp'
 
 indexes = mng.get_keyword_indexes(data, key)
 
+#print(indexes)
+
+
+
+
+indexes = mng.get_full_fold_cmps(data)
+
+indexes = indexes[np.linspace(0, len(indexes)-1, 5, dtype = int)]
+
 print(indexes)
 
+#indexes = indexes[::20]
 
-index = [304,200,500]
-sta.interactive_velocity_analysis(data,index)
-interpolated_line = None
-ponto_parada= None
+data_mute= filter.mute(data,time=0.1,velocity=1000)
+
+data_agc= filter.apply_agc(data_mute,10)
+
+sta.interactive_velocity_analysis(data_agc,indexes,vmax=3000,vmin=1500)
+
+pick_files = r"all_picks.txt"
+
+#sta.apply_normal_moveout(data,indexes,pick_files)
+
+#view.radon_transform(data)
+
+interpolated_line = None                                                                
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # def inter(data, **kwargs) -> None:
     # fmax = kwargs.get("fmax") if "fmax" in kwargs else 100.0
