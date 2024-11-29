@@ -349,3 +349,34 @@ def mute(data_input : sgy.SegyFile, **kwargs) -> None:
     data_output.header = data_input.header
     
     return data_output
+
+def apply_agc(data, agc_operator: int, key: str, index: int):
+    
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
+
+    byte = mng.__keywords.get(key)
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+
+    seismic = np.zeros((nt, len(traces)))
+
+    sliding_window = int(agc_operator / (1e3 * dt))
+    for i in range(len(traces)):
+        seismic[:, i] = data.trace.raw[traces[i]] 
+
+    for i in range(len(traces)):
+        trace = seismic[:, i]
+        l, h = 0, sliding_window - 1
+        mid = (l + h) // 2
+        while h < nt - 1:
+            window_samples = trace[l:h]
+            mean_amplitude = np.mean(np.abs(window_samples))
+            trace[mid] /= mean_amplitude + 1e-6
+
+            l, h, mid = l + 1, h + 1, mid + 1
+
+    return seismic
+
