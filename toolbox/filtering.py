@@ -302,18 +302,19 @@ def fourier_fk_domain(data: sgy.SegyFile, **kwargs) -> sgy.SegyFile:
 
 def mute(data_input : sgy.SegyFile, **kwargs) -> None:
     '''
-    Fourier 1D bandpass filtering. This function apply this filter along all data traces, 
-    exporting and returning a new data filtered. 
-    
+    Mute traces according with a linear function : t = ti + x / v.
+
+    x -> offset according to segy data (it's not a parameter).
+     
     ### Parameters:        
     
     data: segyio object.
 
     ### Optional parameters:
     
-    time: initial time to delay the linear mute in seconds.    
+    time (ti): initial time to delay the linear mute in seconds.    
     
-    velocity: defines slope of the linear mute in meters per seconds.    
+    velocity (v): defines slope of the linear mute in meters per seconds.    
     
     output_name: path to export data results.    
 
@@ -350,27 +351,48 @@ def mute(data_input : sgy.SegyFile, **kwargs) -> None:
     
     return data_output
 
-def apply_agc(data: sgy.SegyFile , agc_operator: int, **kwargs):
+def apply_agc(data: sgy.SegyFile , time_window : float, **kwargs):
    
     #TODO: add docstring
-   
-  
 
-    
+    # time_window in seconds
+
+
+
+    key = kwargs.get("key") if "key" in kwargs else "src"
+
+    byte = mng.__keywords.get(key)
+
+    if key == "cmp":      
+        cmp_indexes = mng.get_keyword_indexes(data, key)
+        _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+        index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
+
+    elif key == "rec":
+        rec_indexes = mng.get_keyword_indexes(data, key)
+        _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
+        index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
+    else: 
+        index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(data, key)[0] 
+
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
 
-    output_name = kwargs.get("output_name") if "output_name" in kwargs else f"agc_seismic.sgy"
+    seismic = np.zeros((nt, len(traces)))
 
-    traces = data.tracecount
+    for i in range(len(traces)):
+        seismic[:,i] = data.trace.raw[traces[i]] 
 
-    seismic = np.zeros((nt, traces))
+    sliding_window = int(time_window / dt) + 1
 
-    sliding_window = int(agc_operator / (1e3 * dt))
-    for i in range(traces):
-        seismic[:, i] = data.trace.raw[i] 
-
-    for i in range(traces):
+    for i in range(len(traces)):
         trace = seismic[:, i]
         l, h = 0, sliding_window - 1
         mid = (l + h) // 2
@@ -381,10 +403,7 @@ def apply_agc(data: sgy.SegyFile , agc_operator: int, **kwargs):
 
             l, h, mid = l + 1, h + 1, mid + 1
 
-        
+        seismic[:,i] = trace
 
-    sgy.tools.from_array2D(output_name, seismic.T)
-    data_output = sgy.open(output_name, "r+", ignore_geometry = True)
-    data_output.header = data.header
-    return data_output
+    return seismic
 

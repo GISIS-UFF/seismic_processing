@@ -3,10 +3,10 @@ import segyio as sgy
 
 import matplotlib.pyplot as plt
 
-from scipy.interpolate import griddata
 from toolbox import managing as mng
 from toolbox import filtering as filt
 
+from scipy.interpolate import griddata
 
 def gather(data : sgy.SegyFile, **kwargs) -> None:
     '''
@@ -25,6 +25,8 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     ### Hints:
     
     For each header keyword the first index is plotted. 
+
+    If only data was setted up, function plots the fist shot gather. 
     
     Specially for a cmp and rec gather, the first complete data is plotted. 
         
@@ -35,6 +37,7 @@ def gather(data : sgy.SegyFile, **kwargs) -> None:
     >>> view.gather(data, key = "rec", index = 789) 
     >>> view.gather(data, key = "cmp", index = 512) 
     '''    
+
     key = kwargs.get("key") if "key" in kwargs else "src"
 
     byte = mng.__keywords.get(key)
@@ -110,6 +113,8 @@ def geometry(data : sgy.SegyFile, **kwargs) -> None:
     ### Hints:
     
     For each header keyword the first index is plotted. 
+
+    If only data was setted up, function plots the fist shot gather geometry. 
     
     Specially for a cmp and rec gather, the first complete data is plotted. 
 
@@ -191,36 +196,23 @@ def fold_geometry(data : sgy.SegyFile, **kwargs) -> None:
     
     data: segyio object.
 
-    key: header keyword options -> ["src", "rec", "off", "cmp"]
-    
-    index: integer that select a common gather.  
-
     ### Examples:
 
-    >>> view.fold_geometry(data)                           # plots first shot 
-    >>> view.fold_geometry(data, key = "off")              # plots first offset
-    >>> view.fold_geometry(data, key = "rec", index = 35)  # plots rec index 789
-    >>> view.fold_geometry(data, key = "cmp", index = 512) # plots cmp index 512
+    >>> view.fold_geometry(data) 
     '''    
-
-    key = kwargs.get("key") if "key" in kwargs else "src"
-    index = kwargs.get("index") if "index" in kwargs else mng.keyword_indexes(data, key)[0] 
-
-    mng.__check_keyword(key)
-    mng.__check_index(data, key, index)
 
     fig, ax = plt.subplots(ncols = 1, nrows = 1, figsize = (15, 5))
 
     cmp = data.attributes(21)[:] / data.attributes(69)[:]
-    cmpx,cmpt=np.unique(cmp,return_counts=True)
+    cmpx, cmpt = np.unique(cmp, return_counts = True)
 
-    im = ax.scatter(cmpx, cmpt, c=cmpt, cmap='jet', label="CMPs")
-    ax.set_xlabel("Distance [km]", fontsize=15)
-    ax.set_ylabel("CDP Fold Geometry", fontsize=15)
+    im = ax.scatter(cmpx, cmpt, c = cmpt, cmap = 'jet', label = "CMPs")
+    ax.set_xlabel("Distance [km]", fontsize = 15)
+    ax.set_ylabel("CDP Fold Geometry", fontsize = 15)
 
-    cax = fig.colorbar(im, ax=ax)
-    cax.set_ticks(np.linspace(cmpt.min(), cmpt.max(), num=5).astype(int))
-    cax.set_label("CDP Fold Geometry", fontsize=15)
+    cax = fig.colorbar(im, ax = ax)
+    cax.set_ticks(np.linspace(cmpt.min(), cmpt.max(), num = 5).astype(int))
+    cax.set_label("CDP Fold Geometry", fontsize = 15)
 
     fig.tight_layout()
     plt.show()
@@ -236,7 +228,7 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
 
     ### Optional parameters:
                     
-    key: header keyword options -> ['src', 'rec', 'cmp'].
+    key: header keyword options -> ["src", "rec", "off", "cmp"] - "src" as default
     
     index: integer that select a common gather.  
     
@@ -247,11 +239,14 @@ def fourier_fx_domain(data : sgy.SegyFile, **kwargs) -> None:
     ### Hints:
     
     For each header keyword the first index is plotted. 
+
+    If only data was setted up, function plots the fist shot gather analysis. 
     
     Specially for a cmp and rec gather, the first complete data is plotted. 
 
     ### Examples:
 
+    >>> view.fourier_fx_domain(data)                    
     >>> view.fourier_fx_domain(data, trace_number = 100)                    
     >>> view.fourier_fx_domain(data, key = "off", fmax = 200)  
     >>> view.fourier_fx_domain(data, key = "rec", index = 789)   
@@ -366,7 +361,7 @@ def fourier_fk_domain(data : sgy.SegyFile, **kwargs) -> None:
 
     ### Optional parameters:
                     
-    key: header keyword options -> ['src', 'rec', 'cmp'].
+    key: header keyword options -> ["src", "rec", "off", "cmp"] - "src" as default
     
     index: integer that select a common gather.  
 
@@ -375,11 +370,14 @@ def fourier_fk_domain(data : sgy.SegyFile, **kwargs) -> None:
     ### Hints:
     
     For each header keyword the first index is plotted. 
-    
+
+    If only data was setted up, function plots the fist shot gather analysis. 
+        
     Specially for a cmp and rec gather, the first complete data is plotted. 
         
     ### Examples:
 
+    >>> view.fourier_fk_domain(data)                            
     >>> view.fourier_fk_domain(data, fmax = 200)                            
     >>> view.fourier_fk_domain(data, key = "off", fmax = 200)  
     >>> view.fourier_fk_domain(data, key = "rec", index = 789)   
@@ -481,7 +479,7 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
 
     ### Optional parameters:
                     
-    key: header keyword options -> ['src', 'rec', 'cmp'].
+    key: header keyword options -> ["src", "rec", "off", "cmp"] - "src" as default
 
     index: integer that select a common gather.  
 
@@ -494,11 +492,14 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
     ### Hints:
     
     For each header keyword the first index is plotted. 
+
+    If only data was setted up, function plots the fist shot gather analysis. 
     
     Specially for a cmp and rec gather, the first complete data is plotted. 
     
     ### Examples:
-    
+
+    >>> view.radon_transform(data)    
     >>> view.radon_transform(data, style = "linear")
     >>> view.radon_transform(data, key = "rec", style = "hyperbolic")
     >>> view.radon_transform(data, key = "cmp", vmin = 100, vmax = 1000)
@@ -529,11 +530,6 @@ def radon_transform(data : sgy.SegyFile, **kwargs) -> None:
         _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
         complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
         index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
-
-    elif key == "off": 
-        print("Wrong argument for key!")
-        print("Possible keys: ['src', 'rec', 'cmp']")
-        exit()
     
     else:    
         index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(data, key)[0] 
@@ -610,22 +606,23 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
 
     ### Optional parameters:
 
-    key: header keyword options -> ["src", "rec", "off", "cmp"]
+    key: header keyword options -> ["src", "rec", "off", "cmp"] - "src" as default
     
     index: integer that select a common gather.  
 
     ### Hints:
     
     For each header keyword the first index is plotted. 
-    
+
+    If only data was setted up, function plots the fist shot gather difference. 
+
     Specially for a cmp and rec gather, the first complete data is plotted. 
         
     ### Examples:
 
-    >>> view.difference(data, data_filt, key = "src")
-    >>> view.difference(data, data_filt, key = "rec")
-    >>> view.difference(data, data_filt, key = "cmp")
+    >>> view.difference(data, data_filt)
     >>> view.difference(data, data_filt, key = "off")
+    >>> view.difference(data, data_filt, key = "cmp", index = 137)
     '''    
 
     key = kwargs.get("key") if "key" in kwargs else "src"
@@ -643,11 +640,6 @@ def difference(input : sgy.SegyFile, output : sgy.SegyFile, **kwargs) -> None:
         _, src_per_rec = np.unique(input.attributes(byte)[:], return_counts = True)
         complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
         index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
-
-    elif key == "off": 
-        print("Wrong argument for key!")
-        print("Possible keys: ['src', 'rec', 'cmp']")
-        exit()
     
     else:    
         index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(input, key)[0] 
@@ -709,13 +701,14 @@ def velocity_model(data : sgy.SegyFile, picks_file : str) -> None:
     ### Mandatory Parameters:
 
     data: segyio object.
+
     picks_file: string, path to a text file with velocity picks in the format CMP, Velocity, Time.
 
     ### Examples:
 
     >>> velocity_model(data, picks_file = "all_picks.txt")                            
-
     '''
+
     picks = np.loadtxt(picks_file, delimiter=",")
     cmp_picks = picks[:, 0]
     vel_picks = picks[:, 1]
@@ -751,13 +744,13 @@ def velocity_model(data : sgy.SegyFile, picks_file : str) -> None:
     time_grid = np.linspace(times[0], times[-1], 300)
     cmp_grid, time_grid = np.meshgrid(cmp_grid, time_grid)    
 
-    velocity_grid = griddata((cmp_picks, time_picks), vel_picks, (cmp_grid, time_grid), method='linear')
+    velocity_grid = griddata((cmp_picks, time_picks), vel_picks, (cmp_grid, time_grid), method = 'linear')
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
     img = ax.imshow(velocity_grid, extent=(cmp_min, cmp_max, times[-1], times[0]), aspect='auto', cmap="jet", vmin=vmin, vmax=vmax)
 
-    scatter = ax.scatter(cmp_picks, time_picks, c=vel_picks, cmap="jet", vmin=vmin, vmax=vmax, marker='o', s=20, edgecolor="k", label="Velocity Picks")
+    ax.scatter(cmp_picks, time_picks, c=vel_picks, cmap="jet", vmin=vmin, vmax=vmax, marker='o', s=20, edgecolor="k", label="Velocity Picks")
     cbar = fig.colorbar(img, ax=ax) 
     cbar.set_label("Velocity [m/s]", fontsize=12)
 
@@ -767,8 +760,6 @@ def velocity_model(data : sgy.SegyFile, picks_file : str) -> None:
     ax.set_xticks(np.linspace(cmp_min, cmp_max, num=10))
     ax.set_yticks(np.linspace(times[-1], times[0], num=11))
 
-    
-    
     ax.set_xlabel("CMP", fontsize=12)
     ax.set_ylabel("Time [s]", fontsize=12)
     ax.set_title("Velocity Model", fontsize=14)

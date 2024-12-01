@@ -1,16 +1,28 @@
 import sys; sys.path.append("../")
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 from toolbox import managing as mng
 from toolbox import stacking as stk 
 from toolbox import filtering as filt
 from toolbox import visualizing as view
 
-data = mng.import_sgy_file("../data/synthetic/synthetic_data_raw.sgy")
+folder = "../data/synthetic/"
+data_raw_file = "synthetic_data_raw.sgy"
+data_mute_file =  "synthetic_data_mute.sgy"
 
-data_muted = filt.mute(data, time = 0.2, velocity = 800)
+data = mng.import_sgy_file(folder + data_raw_file)
 
-view.gather(data_muted, key = "cmp")
+cmps = mng.get_full_fold_cmps(data)
 
-cmps = 191
+window = np.linspace(0, len(cmps)-1, 5, dtype = int)
 
-stk.interactive_velocity_analysis(data_muted, indexes = cmps)
+cmpId = cmps[window]
+
+stk.interactive_velocity_analysis(data, cmpId)
+
+# seismic = filt.apply_agc(data_muted, time_window = 0.01, key = "cmp", index = cmpId[0])
+
+# plt.imshow(seismic, aspect = "auto", cmap = "Greys")
+# plt.show()

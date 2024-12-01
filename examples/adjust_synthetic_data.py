@@ -2,8 +2,6 @@ import sys; sys.path.append("../")
 
 import numpy, segyio 
 
-import matplotlib.pyplot as plt
-
 from toolbox import managing as mng
 
 folder = "../data/synthetic/"

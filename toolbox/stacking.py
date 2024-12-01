@@ -11,7 +11,6 @@ from toolbox import filtering as filt
 stop_point= None
 interpolated_line = None
 
-
 def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **kwargs):
     """
     Perform an interactive velocity analysis.
@@ -30,6 +29,7 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
 
     nvel: total velocity parameters.
 
+    picks_file : path to save time x velocity picks     
 
     ### Examples:
     
@@ -37,17 +37,17 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
 
     ### Tutorial for picking velocity:
     
-    1) Click on the   semblance graphic.
-    2) After placing the points, press 'y' and then 'Enter'.
-    3) Save is currently under maintenance.
-    
+    1) Click on the semblance graphic.
+    2) Press n if you want to delete some point picked according to the index.
+    3) After placing the points, press 'y' and then 'Enter'.
+
+    Just it, right now yout picks are saved according to the picks_file variable. 
+
     This function explains the steps needed for velocity picking.
 
     ### Returns:
     
-    parameters.txt  (t,v)
-    
-    
+    None
     """
 
     key = 'cmp'
@@ -60,7 +60,9 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
     
     vmin = kwargs.get("vmin") if "vmin" in kwargs else 1000.0
     vmax = kwargs.get("vmax") if "vmax" in kwargs else 3000.0 
-    nvel = kwargs.get("dv") if "dv" in kwargs else 101
+    nvel = kwargs.get("dv") if "dv" in kwargs else 51
+
+    picks_file = kwargs.get("picks_file") if "picks_file" in kwargs else "all_picks.txt"
 
     nt = data.attributes(115)[0][0]
     dt = data.attributes(117)[0][0] * 1e-6
@@ -81,21 +83,17 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         
         seismic = np.zeros((nt, len(traces)))
 
-        gain = times ** 2
-
         for i in range(len(traces)):
-            seismic[:,i] = data.trace.raw[traces[i]] * gain
+            seismic[:,i] = data.trace.raw[traces[i]]
+
+        # seismic = filt.apply_agc(data, time_window = 0.01, key = key, index = index)
 
         domain = filt.radon_forward(seismic, dt, times, offsets, velocities, style = "hyperbolic")
     
         semblance = np.sum(np.abs(domain)**2, axis = 1)
-
-        semblance = gaussian_filter(semblance, sigma = 3.0)
-
-        semblance = np.abs(np.gradient(semblance, axis = 0))
-
-        semblance = gaussian_filter(semblance, sigma = 5.0)
-#        print(semblance.shape)
+        # semblance = gaussian_filter(semblance, sigma = 3.0)
+        # semblance = np.abs(np.gradient(semblance, axis = 0))
+        # semblance = gaussian_filter(semblance, sigma = 5.0)
 
         def onclick(event):
             
@@ -109,13 +107,10 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                     nonlocal points_vxt
                     add= np.array([[index, velocities[int(x)], times[int(y)]]]) # added index
                     
-                    points_vxt = np.append(points_vxt,add,axis=0)
-                    print(points_vxt)
-                    
-                    
+                    points_vxt = np.append(points_vxt, add, axis = 0)
+
                     plt.plot(x, y, 'ro')
                     plt.draw()
-                    print(velocities[int(x)], times[int(y)])    
 
                 else:
                     points.append((x, y))
@@ -124,12 +119,11 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                 plt.draw()
                 
             else:
-                print('Clique fora dos eixos.')
-
+                print("You're clicking outside the figure.")
 
         def on_key(event):
-            if event.key=='n' and len(points) >= 1:
-                index = int(input('Escolha o ponto para deletar (começando de 0): '))
+            if event.key == 'n' and len(points) >= 1:
+                index = int(input('Inform a pick index to delete (starting from 0: '))
                 
                 if 0 <= index < len(points):
                     points.pop(index)
@@ -146,29 +140,19 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                     for p in points:
                         plt.plot(p[0], p[1], 'ro')
                         plt.draw()
-        
-        
-        #def stop(event):
-            #  global ponto_parada
-            #  if event.key == 'j':
-            
-            #     if ponto_parada is None:  
-            #         ponto_parada = (0, 0)
-                    
-            #         plt.plot(ponto_parada[0], ponto_parada[1], 'go', label='Ponto de Parada')
-            #         plt.draw()    
-        
-
+                
         def onkeypress(event):
         
             global interpolated_line
 
             if event.key == 'enter':
+                
                 if len(points) > 1:
+                    
                     points_sorted = sorted(points, key = lambda p: p[1])
                     x,y = zip(*points_sorted)
                 
-                    cs = interp1d(y, x, kind='linear')
+                    cs = interp1d(y, x, kind = 'linear')
                     ynew = np.linspace(min(y), max(y), num = 500)
                     xnew = cs(ynew)
                     xsmooth = gaussian_filter(xnew, sigma=7)
@@ -176,30 +160,23 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                         interpolated_line.remove()
 
                     interpolated_line, = plt.plot(xsmooth, ynew)
-                    plt.draw()
+                    plt.draw()        
 
-            elif event.key =='m':
-                if interpolated_line:
-                    interpolated_line.remove()  
-                    interpolated_line = None  
-                    plt.draw()
+                    nonlocal points_vxt
         
-        
-        def save(event):
-            if event.key=='c':
-                nonlocal points_vxt
-                sorted_indices = np.argsort(points_vxt[:, 2])
-                points_vxt = points_vxt[sorted_indices]
+                    sorted_indices = np.argsort(points_vxt[:, 2])
+                    points_vxt = points_vxt[sorted_indices]
                 
-                all_picks.extend(points_vxt.tolist()) # add to all
-                print(f"Picks for CMP {index} are saved.")
+                    all_picks.extend(points_vxt.tolist()) # add to all
+                    print(f"Picks for CMP {index} are saved.")
         
         def add(event):
             if event.key=='y':
                     nonlocal points_vxt
+                    
                     p0=points[0][0]
                     p1=points[-1][0]
-                    #print(points_vxt)
+
                     first_point=points_vxt[0]
                     last_point=points_vxt[-1]
 
@@ -208,7 +185,6 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
                     add_points = np.array([[index, last_point[1], max(times)], [index, first_point[1], min(times)]]) # added index
                     
                     points_vxt=np.concatenate((points_vxt,add_points),axis=0) 
-                    
                     
                     xn = [p[0] for p in points]
                     yn = [p[1] for p in points]
@@ -248,21 +224,16 @@ def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **k
         cbar2 = fig.colorbar(im2, ax = ax[1])
         cbar2.set_label("Amplitude", fontsize = 10)
 
-        
-        
         fig.tight_layout()
         fig.canvas.mpl_connect('button_press_event', onclick)
         fig.canvas.mpl_connect('key_press_event', onkeypress)
         fig.canvas.mpl_connect('key_press_event', on_key)
-        #fig.canvas.mpl_connect('key_press_event', stop)
-        fig.canvas.mpl_connect('key_press_event', save)
         fig.canvas.mpl_connect('key_press_event', add)  
         plt.show()
 
     all_picks = np.array(all_picks)
-    np.savetxt("all_picks.txt", all_picks, fmt="%d,%.4f,%.4f", delimiter=',')
-    print("File 'all_picks.txt' saved with all picks.")
-
+    np.savetxt(picks_file, all_picks, fmt = "%d,%.4f,%.4f", delimiter=',')
+    print(f"File {picks_file} saved with all picks.")
 
 def apply_normal_moveout(data,index,picks):
     
@@ -351,7 +322,6 @@ def apply_normal_moveout(data,index,picks):
     # ax[3].invert_yaxis()
     plt.show()
         
-
 def stack_cmp_gathers():
     # returns a post-stack seismic section 
     pass
