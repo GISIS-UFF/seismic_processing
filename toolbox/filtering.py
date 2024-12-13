@@ -407,3 +407,116 @@ def apply_agc(data: sgy.SegyFile , time_window : float, **kwargs):
 
     return seismic
 
+
+def time_variant_filtering(data : sgy.SegyFile, num_windows: int, **kwargs) -> None:
+    """
+    Apply time-variant filtering to normalize the amplitude of each trace in a 2D seismic dataset.
+    Each trace (row) is processed independently.
+
+    Parameters:
+    - data (numpy.ndarray): 2D array representing the seismic dataset (traces as rows).
+    - dt (float): Time sampling interval.
+    - num_windows (int): Number of windows to divide each trace for normalization.
+
+    Returns:
+    - numpy.ndarray: The scaled 2D dataset after normalization.
+    """
+    key = kwargs.get("key") if "key" in kwargs else "src"
+
+    byte = mng.__keywords.get(key)
+
+    if key == "cmp":      
+        cmp_indexes = mng.get_keyword_indexes(data, key)
+        _, cmps_per_traces = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_cmp_indexes = np.where(cmps_per_traces == np.max(cmps_per_traces))[0]
+        index = kwargs.get("index") if "index" in kwargs else cmp_indexes[complete_cmp_indexes[0]]
+
+    elif key == "rec":
+        rec_indexes = mng.get_keyword_indexes(data, key)
+        _, src_per_rec = np.unique(data.attributes(byte)[:], return_counts = True)
+        complete_rec_indexes = np.where(src_per_rec == np.max(src_per_rec))[0]
+        index = kwargs.get("index") if "index" in kwargs else rec_indexes[complete_rec_indexes[0]]
+    
+    else:    
+        index = kwargs.get("index") if "index" in kwargs else mng.get_keyword_indexes(data, key)[0] 
+
+
+    mng.__check_keyword(key)
+    mng.__check_index(data, key, index)
+
+    traces = np.where(data.attributes(byte)[:] == index)[0]
+
+    nt = data.attributes(115)[0][0]
+    dt = data.attributes(117)[0][0] * 1e-6
+
+    seismic = np.zeros((nt, len(traces)))
+
+    for i in range(len(traces)):
+        seismic[:,i] = data.trace.raw[traces[i]] 
+
+    seismic = seismic.T
+
+    if seismic.ndim != 2:
+        raise ValueError("seismic must be a 2D array.")
+    if num_windows <= 0:
+        raise ValueError("num_windows must be greater than 0.")
+
+    seismic_filt = np.zeros_like(seismic)
+
+    for i in range(seismic.shape[0]): 
+        trace = seismic[i, :]
+        normalization_start_time = (np.argmax(trace) + 100) * dt  
+        normalization_start_time = int(normalization_start_time / dt)
+        
+        if normalization_start_time >= len(trace):
+            raise ValueError("normalization_start_time exceeds the length of the signal.")
+
+        window_size = (len(trace) - normalization_start_time) // num_windows
+        max_scale = np.max(trace)
+        min_scale = np.min(trace)  
+
+        signal_scaled = np.copy(trace)
+        for j in range(num_windows):
+            start_idx = normalization_start_time + j * window_size
+            end_idx = start_idx + window_size if j < num_windows - 1 else len(trace)
+            signal_max = np.max(np.abs(trace[start_idx:end_idx]))  
+
+            if signal_max > 1e-6:  
+                normalized_segment = trace[start_idx:end_idx] / signal_max
+                normalized_segment = np.where(
+                    normalized_segment > 0,
+                    normalized_segment * max_scale, 
+                    normalized_segment * abs(min_scale) 
+                )
+                signal_scaled[start_idx:end_idx] = normalized_segment
+
+        seismic_filt[i, :] = signal_scaled
+
+
+    # -------------------------------------------------------------------------------------------
+    # -------------------Plot -------------------------------------------------------------------
+
+    scale = 0.9 * np.std(seismic)
+
+    fig, ax = plt.subplots(ncols = 2, nrows = 1, figsize = (10, 5)) 
+
+    im1 = ax[0].imshow(seismic.T, aspect = 'auto', cmap = 'Greys', vmin = -scale, vmax = scale) 
+
+    ax[0].set_xlabel('Relative trace number', fontsize = 15) 
+    ax[0].set_ylabel('Time [s]', fontsize = 15)
+    cbar1 = fig.colorbar(im1, ax = ax[0])
+    cbar1.set_label("Amplitude", fontsize = 15)
+
+    im2 = ax[1].imshow(seismic_filt.T, aspect = 'auto', cmap = 'Greys', vmin = -scale, vmax = scale)
+
+    ax[1].set_xlabel('Velocity [m/s]', fontsize = 15) 
+    ax[1].set_ylabel('Time [s]', fontsize = 15)
+    ax[1].set_xlabel('Relative trace number', fontsize = 15) 
+    ax[1].set_ylabel('Time [s]', fontsize = 15)
+    cbar2 = fig.colorbar(im2, ax = ax[1])
+    cbar2.set_label("Amplitude", fontsize = 10)
+
+    fig.tight_layout() 
+    plt.show()
+
+
