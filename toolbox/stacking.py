@@ -8,7 +8,7 @@ from scipy.ndimage import gaussian_filter
 from toolbox import managing as mng
 from toolbox import filtering as filt
 
-stop_point= None
+stop_point = None
 interpolated_line = None
 
 def interactive_velocity_analysis(data : sgy.SegyFile, indexes : np.ndarray, **kwargs):
